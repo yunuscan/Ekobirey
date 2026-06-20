@@ -68,7 +68,7 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 100;
-    overflow-y: auto;
+    overflow: hidden;
 }
 
 .sidebar-header {
@@ -95,6 +95,7 @@ body {
 .sidebar-nav {
     flex: 1;
     padding: 12px 0;
+    overflow-y: auto;
 }
 
 .nav-item {
@@ -876,6 +877,32 @@ body {
     box-shadow: 0 0 0;
 }
 
+.mobile-logout-btn {
+    border: 2px solid var(--border-dark);
+    background: var(--cream);
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    box-shadow: 2px 2px 0px var(--border-color);
+}
+
+.mobile-logout-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 0 0 0;
+}
+
+.mobile-logout-btn:hover {
+    background: #FEE2E2;
+    color: #EF4444;
+    border-color: #EF4444;
+}
+
 /* Sidebar overlay backdrop */
 .sidebar-backdrop {
     display: none;
@@ -897,9 +924,10 @@ body {
     .sidebar {
         position: fixed;
         top: 0;
+        bottom: 0;
         left: 0;
         width: 260px;
-        height: 100vh;
+        height: auto;
         transform: translateX(-100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 200;
