@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ekobirey - Ogrenci Paneli">
+    <title>ekobirey | Macera Dunyasi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="student.css">
+</head>
+<body>
+
+    <!-- Animated Background: Stars + Grass (same as index.html) -->
+    <div class="stars" id="stars-container"></div>
+    <canvas id="grass-canvas"></canvas>
+
+    <!-- Student Panel -->
+    <div class="student-panel" id="studentPanel">
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <img src="../img/ekobirey-logo.webp" alt="Logo" class="top-logo">
+            </div>
+            <div class="top-bar-center">
+                <div class="profile-pill" id="profilePill">
+                    <div class="profile-pill-avatar" id="profileAvatar">A</div>
+                    <span class="profile-pill-name" id="profileName">Ogrenci</span>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <button class="top-btn" onclick="toggleSound()" id="soundBtn" aria-label="Ses">
+                    <svg id="sndOn" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                    </svg>
+                    <svg id="sndOff" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                        <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+                    </svg>
+                </button>
+                <button class="top-btn" onclick="studentLogout()" aria-label="Cikis">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="student-content">
+            <div class="game-grid" id="gameGrid">
+                <div class="loading-msg">Yukleniyor...</div>
+            </div>
+            <div class="badge-row" id="badgeRow"></div>
+        </div>
+
+    </div>
+
+    <!-- Game Iframe Overlay -->
+    <div class="game-overlay" id="gameOverlay" style="display:none;">
+        <div class="game-header">
+            <span class="game-title" id="gameTitle">Oyun</span>
+            <button class="game-close-btn" onclick="closeGame()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Kapat
+            </button>
+        </div>
+        <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+
+    <!-- Audio -->
+    <audio id="ambientSound" src="../sounds/ambiyanssesi.ogg" loop preload="auto"></audio>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="student.js"></script>
+
+    <!-- Background Animation (EXACT SAME as index.html) -->
+    <script>
+        // Stars
+        const starsContainer = document.getElementById('stars-container');
+        if (starsContainer) {
+            for (let i = 0; i < 30; i++) {
+                let star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = Math.random() * 3 + 1 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + 'vw';
+                star.style.top = Math.random() * 100 + 'vh';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Grass Canvas Animation (EXACT COPY from index.html)
+        const grassCanvas = document.getElementById('grass-canvas');
+        if (grassCanvas) {
+            const grassCtx = grassCanvas.getContext('2d');
+            let gWidth, gHeight;
+            let blades = [];
+
+            function resizeGrassCanvas() {
+                gWidth = window.innerWidth;
+                gHeight = window.innerHeight;
+                grassCanvas.width = gWidth;
+                grassCanvas.height = gHeight;
+                initGrassBlades();
+            }
+            window.addEventListener('resize', resizeGrassCanvas);
+
+            class GrassBlade {
+                constructor(x) {
+                    this.x = x;
+                    this.y = gHeight;
+                    this.layer = Math.random();
+                    this.height = (Math.random() * 100 + 50) * (this.layer * 0.5 + 0.5);
+                    this.height = Math.min(this.height, gHeight * 0.4);
+                    this.width = Math.random() * 3 + 2;
+                    this.swayPhase = Math.random() * Math.PI * 2;
+                    this.swaySpeed = Math.random() * 0.001 + 0.0005;
+                    const hue = 110 + Math.random() * 30;
+                    const sat = 40 + Math.random() * 20;
+                    const lig = 30 + (this.layer * 20);
+                    this.colorBottom = `hsl(${hue}, ${sat}%, 20%)`;
+                    this.colorTop = `hsl(${hue}, ${sat}%, ${lig}%)`;
+                }
+                draw(time) {
+                    const sway = Math.sin(time * this.swaySpeed + this.swayPhase);
+                    const swayAmount = sway * (this.height * 0.3);
+                    grassCtx.beginPath();
+                    grassCtx.moveTo(this.x, this.y);
+                    grassCtx.quadraticCurveTo(
+                        this.x + swayAmount / 2, this.y - this.height / 2,
+                        this.x + swayAmount, this.y - this.height
+                    );
+                    grassCtx.quadraticCurveTo(
+                        this.x + swayAmount / 2 + this.width, this.y - this.height / 2,
+                        this.x + this.width, this.y
+                    );
+                    grassCtx.closePath();
+                    const gradient = grassCtx.createLinearGradient(this.x, this.y, this.x + swayAmount, this.y - this.height);
+                    gradient.addColorStop(0, this.colorBottom);
+                    gradient.addColorStop(1, this.colorTop);
+                    grassCtx.fillStyle = gradient;
+                    grassCtx.fill();
+                }
+            }
+
+            function initGrassBlades() {
+                blades = [];
+                const bladeCount = Math.floor(gWidth / 2);
+                for (let i = 0; i < bladeCount; i++) {
+                    blades.push(new GrassBlade(Math.random() * gWidth));
+                }
+                blades.sort((a, b) => a.layer - b.layer);
+            }
+
+            function animateGrass(time) {
+                grassCtx.clearRect(0, 0, gWidth, gHeight);
+                for (let i = 0; i < blades.length; i++) {
+                    blades[i].draw(time);
+                }
+                requestAnimationFrame(animateGrass);
+            }
+
+            resizeGrassCanvas();
+            requestAnimationFrame(animateGrass);
+        }
+    </script>
+
+</body>
+</html>

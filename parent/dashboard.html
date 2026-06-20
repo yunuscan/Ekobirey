@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ekobirey - Veli Paneli: Çocuğunuzun gelişimini takip edin">
+    <title>ekobirey | Veli Paneli</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="parent.css">
+</head>
+<body>
+
+    <!-- Animated Background: Stars + Grass -->
+    <div class="stars" id="stars-container"></div>
+    <canvas id="grass-canvas"></canvas>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <img src="../img/ekobirey-logo.webp" alt="ekobirey" class="logo-img">
+            <span class="logo-text">ekobirey</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" id="navOverview" onclick="showSection('overview')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Genel Bakış
+            </button>
+            <button class="nav-item" id="navTimeline" onclick="showSection('timeline')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Günlük Akış
+            </button>
+            <button class="nav-item" id="navBadges" onclick="showSection('badges')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Rozetler
+            </button>
+            <button class="nav-item" id="navReports" onclick="showSection('reports')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Gelişim Raporları
+            </button>
+            <button class="nav-item" id="navGames" onclick="showSection('games')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="9" cy="12" r="2"/><path d="M13 12h4"/></svg>
+                Oyunlar
+            </button>
+            <button class="nav-item" id="navMessages" onclick="showSection('messages')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                Mesajlar
+            </button>
+        </nav>
+
+        <div class="sidebar-user">
+            <div class="user-avatar" id="userAvatar">V</div>
+            <div class="user-info">
+                <span class="user-name" id="userName">Veli</span>
+                <span class="user-role">Veli</span>
+            </div>
+            <button class="logout-btn" onclick="handleLogout()" title="Çıkış">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <span>ekobirey</span>
+        </div>
+
+        <!-- Child Selector (if parent has multiple children) -->
+        <div class="child-selector" id="childSelector" style="display:none;">
+            <label>Çocuk:</label>
+            <select id="childSelect" onchange="onChildChange()"></select>
+        </div>
+
+        <!-- ===== GENEL BAKIŞ ===== -->
+        <div class="section active" id="sectionOverview">
+            <div class="page-header">
+                <h1 class="page-title">Merhaba, <span id="parentGreeting">Veli</span>!</h1>
+                <p class="page-subtitle" id="childSummary">Çocuğunuzun bugünkü durumu</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-card stat-blue">
+                    <div class="stat-value" id="statGamesPlayed">0</div>
+                    <div class="stat-label">Bugün Oynanan</div>
+                </div>
+                <div class="stat-card stat-green">
+                    <div class="stat-value" id="statCompleted">0</div>
+                    <div class="stat-label">Tamamlanan</div>
+                </div>
+                <div class="stat-card stat-purple">
+                    <div class="stat-value" id="statBadges">0</div>
+                    <div class="stat-label">Toplam Rozet</div>
+                </div>
+                <div class="stat-card stat-orange">
+                    <div class="stat-value" id="statStreak">-</div>
+                    <div class="stat-label">Son Giriş</div>
+                </div>
+            </div>
+
+            <!-- Today's Timeline Preview -->
+            <div class="panel">
+                <div class="panel-titlebar">
+                    <div class="panel-titlebar-left">
+                        <div class="panel-dots"><span></span><span></span><span></span></div>
+                        Bugünkü Aktiviteler
+                    </div>
+                </div>
+                <div class="panel-body" id="overviewTimeline">
+                    <div class="empty-state"><p>Bugün henüz aktivite yok</p></div>
+                </div>
+            </div>
+
+            <!-- Recent Announcements -->
+            <div class="panel" style="margin-top:20px;">
+                <div class="panel-titlebar">
+                    <div class="panel-titlebar-left">
+                        <div class="panel-dots"><span></span><span></span><span></span></div>
+                        Son Duyurular
+                    </div>
+                </div>
+                <div class="panel-body" id="overviewAnnouncements">
+                    <div class="empty-state"><p>Henüz duyuru yok</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== GÜNLÜK AKIŞ ===== -->
+        <div class="section" id="sectionTimeline">
+            <div class="page-header">
+                <h1 class="page-title">Günlük Akış</h1>
+                <p class="page-subtitle">Çocuğunuzun gün içindeki aktiviteleri</p>
+            </div>
+
+            <div class="date-filter">
+                <label for="timelineDate">Tarih:</label>
+                <input type="date" id="timelineDate" onchange="loadTimeline()">
+            </div>
+
+            <div class="panel">
+                <div class="panel-titlebar">
+                    <div class="panel-titlebar-left">
+                        <div class="panel-dots"><span></span><span></span><span></span></div>
+                        Zaman Tüneli
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="timeline" id="timelineContainer">
+                        <div class="empty-state"><p>Bu tarihte aktivite bulunamadı</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== ROZETLER ===== -->
+        <div class="section" id="sectionBadges">
+            <div class="page-header">
+                <h1 class="page-title">Rozetler</h1>
+                <p class="page-subtitle">Çocuğunuzun kazandığı başarı rozetleri</p>
+            </div>
+
+            <div class="badge-grid" id="badgeGrid">
+                <div class="empty-state"><p>Henüz rozet kazanılmamış</p></div>
+            </div>
+        </div>
+
+        <!-- ===== GELİŞİM RAPORLARI ===== -->
+        <div class="section" id="sectionReports">
+            <div class="page-header">
+                <h1 class="page-title">Gelişim Raporları</h1>
+                <p class="page-subtitle">Öğretmeninizin hazırladığı pedagojik raporlar</p>
+            </div>
+
+            <div class="reports-list" id="reportsList">
+                <div class="empty-state"><p>Henüz rapor paylaşılmamış</p></div>
+            </div>
+        </div>
+
+        <!-- ===== OYUNLAR ===== -->
+        <div class="section" id="sectionGames">
+            <div class="page-header">
+                <h1 class="page-title">Oyunlar</h1>
+                <p class="page-subtitle">Yüklenen oyunları görüntüleyin ve oynayın</p>
+            </div>
+
+            <div class="game-grid" id="parentGameGrid">
+                <div class="empty-state"><p>Henüz oyun yüklenmemiş</p></div>
+            </div>
+        </div>
+
+        <!-- ===== MESAJLAR ===== -->
+        <div class="section" id="sectionMessages">
+            <div class="page-header">
+                <h1 class="page-title">Mesajlar</h1>
+                <p class="page-subtitle">Öğretmen ile iletişim</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchMsgTab('announcements')">Duyurular</button>
+                <button class="tab-btn" onclick="switchMsgTab('compose')">Mesaj Gönder</button>
+            </div>
+
+            <div class="tab-content active" id="tabAnnouncements">
+                <div class="panel">
+                    <div class="panel-titlebar">
+                        <div class="panel-titlebar-left">
+                            <div class="panel-dots"><span></span><span></span><span></span></div>
+                            Okul Duyuruları
+                        </div>
+                    </div>
+                    <div class="panel-body" id="announcementsList">
+                        <div class="empty-state"><p>Duyuru bulunmuyor</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tabCompose">
+                <div class="panel">
+                    <div class="panel-titlebar">
+                        <div class="panel-titlebar-left">
+                            <div class="panel-dots"><span></span><span></span><span></span></div>
+                            Öğretmene Mesaj
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label for="msgSubject">Konu</label>
+                            <input type="text" id="msgSubject" placeholder="Mesaj konusu...">
+                        </div>
+                        <div class="form-group">
+                            <label for="msgBody">Mesajınız</label>
+                            <textarea id="msgBody" rows="5" placeholder="Mesajınızı yazın..."></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="sendMessageToTeacher()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            Gönder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Game Overlay -->
+    <div class="game-overlay" id="gameOverlay" style="display:none;">
+        <div class="game-header">
+            <span class="game-title" id="gameTitle">Oyun</span>
+            <button class="game-close-btn" onclick="closeGame()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Kapat
+            </button>
+        </div>
+        <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/background.js"></script>
+    <script src="parent.js"></script>
+
+</body>
+</html>

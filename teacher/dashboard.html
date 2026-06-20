@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ekobirey - Ogretmen Yonetim Paneli">
+    <title>ekobirey | Ogretmen Paneli</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+
+    <!-- Animated Background: Stars + Grass -->
+    <div class="stars" id="stars-container"></div>
+    <canvas id="grass-canvas"></canvas>
+
+    <!-- ====== SIDEBAR ====== -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="../img/ekobirey-logo.webp" alt="Logo" class="sidebar-logo">
+            <span class="sidebar-brand">ekobirey</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" onclick="showSection('overview')" id="navOverview">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span>Genel Bakis</span>
+            </button>
+            <button class="nav-item" onclick="showSection('classes')" id="navClasses">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span>Siniflar</span>
+            </button>
+            <button class="nav-item" onclick="showSection('students')" id="navStudents">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span>Ogrenciler</span>
+            </button>
+            <button class="nav-item" onclick="showSection('activities')" id="navActivities">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span>Aktiviteler</span>
+            </button>
+            <button class="nav-item" onclick="showSection('messages')" id="navMessages">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span>Mesajlar</span>
+            </button>
+            <button class="nav-item" onclick="showSection('reports')" id="navReports">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span>Raporlar</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">O</div>
+                <div>
+                    <div class="user-name" id="userName">Ogretmen</div>
+                    <div class="user-role">Ogretmen</div>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="handleLogout()">Cikis Yap</button>
+        </div>
+    </aside>
+
+    <!-- ====== MAIN CONTENT ====== -->
+    <main class="main-content">
+
+        <!-- ===== GENEL BAKIS ===== -->
+        <div class="section active" id="sectionOverview">
+            <div class="page-header">
+                <h1 class="page-title">Genel Bakis</h1>
+                <p class="page-subtitle">Sinif ve ogrenci durumunuz</p>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-value" id="statClasses">0</div>
+                    <div class="stat-label">Sinif</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statStudents">0</div>
+                    <div class="stat-label">Ogrenci</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statActivities">0</div>
+                    <div class="stat-label">Aktivite</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statMessages">0</div>
+                    <div class="stat-label">Mesaj</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-titlebar">
+                    <div class="panel-titlebar-left">
+                        <div class="panel-dots"><span></span><span></span><span></span></div>
+                        Son Girisler
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Ogrenci</th>
+                                <th>Sinif</th>
+                                <th>Giris Zamani</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentLoginsBody">
+                            <tr><td colspan="3" class="empty-state"><p>Henuz giris kaydı yok</p></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SINIFLAR ===== -->
+        <div class="section" id="sectionClasses">
+            <div class="page-header">
+                <h1 class="page-title">Siniflar</h1>
+                <p class="page-subtitle">Siniflari yonetin</p>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <button class="btn btn-primary" onclick="openModal('addClassModal')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Yeni Sinif
+                </button>
+            </div>
+
+            <div class="panel">
+                <div class="panel-titlebar">
+                    <div class="panel-titlebar-left">
+                        <div class="panel-dots"><span></span><span></span><span></span></div>
+                        Sinif Listesi
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Sinif Adi</th>
+                                <th>Sinif Kodu</th>
+                                <th>Ogrenci Sayisi</th>
+                                <th>Durum</th>
+                                <th>Islemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classListBody">
+                            <tr><td colspan="4" class="empty-state"><p>Henuz sinif eklenmemis</p></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== OGRENCILER ===== -->
+        <div class="section" id="sectionStudents">
+            <div class="page-header">
+                <h1 class="page-title">Ogrenciler</h1>
+                <p class="page-subtitle">Ogrenci listesi ve yonetimi</p>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+                <button class="btn btn-primary" onclick="openAddStudentModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Yeni Ogrenci
+                </button>
+                <select id="filterClassSelect" onchange="loadStudents()" class="btn" style="font-family:var(--font-sans);">
+                    <option value="">Tum Siniflar</option>
+                </select>
+                <label class="btn" style="cursor:pointer;">
+                    <input type="checkbox" id="showArchived" onchange="loadStudents()" style="margin-right:6px;">
+                    Arsivlenenleri Goster
+                </label>
+            </div>
+
+            <div class="panel">
+                <div class="panel-titlebar">
+                    <div class="panel-titlebar-left">
+                        <div class="panel-dots"><span></span><span></span><span></span></div>
+                        Ogrenci Listesi
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Öğrenci</th>
+                                <th>Sınıf</th>
+                                <th>Görsel Şifre</th>
+                                <th>Veli</th>
+                                <th>Durum</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentListBody">
+                            <tr><td colspan="5" class="empty-state"><p>Henuz ogrenci eklenmemis</p></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== AKTIVITELER ===== -->
+        <div class="section" id="sectionActivities">
+            <div class="page-header">
+                <h1 class="page-title">Aktiviteler</h1>
+                <p class="page-subtitle">Oyun, hikaye ve ödev yönetimi</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchActivityTab('myActivities')">Aktivitelerim</button>
+                <button class="tab-btn" onclick="switchActivityTab('uploadGame')">Oyun Yukle</button>
+                <button class="tab-btn" onclick="switchActivityTab('assignActivity')">Odev Ata</button>
+            </div>
+
+            <!-- Aktivitelerim -->
+            <div class="tab-content active" id="tabMyActivities">
+                <div style="margin-bottom:16px;">
+                    <button class="btn btn-primary" onclick="openModal('addActivityModal')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Yeni Aktivite
+                    </button>
+                </div>
+                <div class="panel">
+                    <div class="panel-titlebar">
+                        <div class="panel-titlebar-left">
+                            <div class="panel-dots"><span></span><span></span><span></span></div>
+                            Aktivite Listesi
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Baslik</th>
+                                    <th>Tur</th>
+                                    <th>Tarih</th>
+                                    <th>Islemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityListBody">
+                                <tr><td colspan="4" class="empty-state"><p>Henuz aktivite eklenmemis</p></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Oyun Yukle -->
+            <div class="tab-content" id="tabUploadGame">
+                <div class="panel">
+                    <div class="panel-titlebar">
+                        <div class="panel-titlebar-left">
+                            <div class="panel-dots"><span></span><span></span><span></span></div>
+                            HTML Oyun Dosyasi Yukle
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">
+                            Bilgisayarinizdan bir HTML oyun dosyasini surukleyip birakin. Sistem dosyayi otomatik olarak isler.
+                        </p>
+                        <div class="dropzone" id="gameDropzone">
+                            <div class="dropzone-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </div>
+                            <p class="dropzone-text">HTML dosyasini buraya surukleyin</p>
+                            <p class="dropzone-hint">veya tiklayarak secin (.html)</p>
+                            <input type="file" id="gameFileInput" accept=".html,.htm" style="display:none;" onchange="handleGameFile(this.files[0])">
+                        </div>
+                        <div id="gameFilePreview" style="display:none;"></div>
+
+                        <div class="form-group" style="margin-top:16px;">
+                            <label for="gameTitle">Oyun Adı</label>
+                            <input type="text" id="gameTitle" placeholder="Örnek: Sayı Toplama Oyunu">
+                        </div>
+                        <div class="form-group">
+                            <label for="gameCover">Kapak Fotoğrafı (isteğe bağlı)</label>
+                            <input type="file" id="gameCover" accept="image/*" style="font-family:var(--font-sans);">
+                        </div>
+                        <div class="form-group">
+                            <label for="gameDescription">Açıklama (isteğe bağlı)</label>
+                            <textarea id="gameDescription" placeholder="Oyun hakkında kısa bir açıklama..."></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="uploadGame()" id="uploadGameBtn" disabled>Oyunu Kaydet</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Odev Ata -->
+            <div class="tab-content" id="tabAssignActivity">
+                <div class="panel">
+                    <div class="panel-titlebar">
+                        <div class="panel-titlebar-left">
+                            <div class="panel-dots"><span></span><span></span><span></span></div>
+                            Odev Atama
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label for="assignActivitySelect">Aktivite Sec</label>
+                            <select id="assignActivitySelect">
+                                <option value="">Bir aktivite secin...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignClassSelect">Sinif Sec</label>
+                            <select id="assignClassSelect" onchange="loadAssignStudents()">
+                                <option value="">Tum sinifa ata...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Belirli ogrencilere atamak icin secin (istege bagli)</label>
+                            <div class="student-chips" id="assignStudentChips">
+                                <span style="color:var(--text-light);font-size:13px;">Once sinif secin</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignDueDate">Son Tarih (istege bagli)</label>
+                            <input type="date" id="assignDueDate">
+                        </div>
+                        <button class="btn btn-primary" onclick="assignActivity()">Odev Ata</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== MESAJLAR ===== -->
+        <div class="section" id="sectionMessages">
+            <div class="page-header">
+                <h1 class="page-title">Mesajlar</h1>
+                <p class="page-subtitle">Veli iletisim hatti</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchMessageTab('compose')">Yeni Mesaj</button>
+                <button class="tab-btn" onclick="switchMessageTab('sent')">Gonderilenler</button>
+            </div>
+
+            <!-- Yeni Mesaj -->
+            <div class="tab-content active" id="tabCompose">
+                <div class="panel">
+                    <div class="panel-titlebar">
+                        <div class="panel-titlebar-left">
+                            <div class="panel-dots"><span></span><span></span><span></span></div>
+                            Mesaj Yaz
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label>Mesaj Turu</label>
+                            <div style="display:flex;gap:10px;">
+                                <label class="btn" style="cursor:pointer;">
+                                    <input type="radio" name="msgType" value="announcement" checked onchange="toggleMessageType()" style="margin-right:6px;">
+                                    Toplu Duyuru
+                                </label>
+                                <label class="btn" style="cursor:pointer;">
+                                    <input type="radio" name="msgType" value="private" onchange="toggleMessageType()" style="margin-right:6px;">
+                                    Ozel Mesaj
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group" id="msgClassGroup">
+                            <label for="msgClassSelect">Sinif Sec</label>
+                            <select id="msgClassSelect">
+                                <option value="">Tum siniflara...</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="msgParentGroup" style="display:none;">
+                            <label for="msgParentSelect">Veli Sec</label>
+                            <select id="msgParentSelect">
+                                <option value="">Bir veli secin...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="msgSubject">Konu</label>
+                            <input type="text" id="msgSubject" placeholder="Mesaj konusu...">
+                        </div>
+                        <div class="form-group">
+                            <label for="msgBody">Mesaj</label>
+                            <textarea id="msgBody" placeholder="Mesajinizi yazin..." style="min-height:120px;"></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="sendMessage()">Mesaj Gonder</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gonderilenler -->
+            <div class="tab-content" id="tabSent">
+                <div class="panel">
+                    <div class="panel-titlebar">
+                        <div class="panel-titlebar-left">
+                            <div class="panel-dots"><span></span><span></span><span></span></div>
+                            Gonderilen Mesajlar
+                        </div>
+                    </div>
+                    <div class="panel-body" id="sentMessagesList">
+                        <div class="empty-state"><p>Henuz mesaj gonderilmemis</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== RAPORLAR ===== -->
+        <div class="section" id="sectionReports">
+            <div class="page-header">
+                <h1 class="page-title">Gelisim Raporlari</h1>
+                <p class="page-subtitle">Ogrenci gelisim karnesi olusturun</p>
+            </div>
+
+            <div class="panel" style="margin-bottom:20px;">
+                <div class="panel-titlebar">
+                    <div class="panel-titlebar-left">
+                        <div class="panel-dots"><span></span><span></span><span></span></div>
+                        Rapor Olustur
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reportClassSelect">Sinif</label>
+                            <select id="reportClassSelect" onchange="loadReportStudents()">
+                                <option value="">Sinif secin...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="reportStudentSelect">Ogrenci</label>
+                            <select id="reportStudentSelect">
+                                <option value="">Ogrenci secin...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reportMotor">Ince Motor Becerileri (1-5)</label>
+                            <input type="range" id="reportMotor" min="1" max="5" value="3" oninput="updateRangeLabel(this)">
+                            <span class="range-val">3</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="reportLogic">Mantiksal Dusunme (1-5)</label>
+                            <input type="range" id="reportLogic" min="1" max="5" value="3" oninput="updateRangeLabel(this)">
+                            <span class="range-val">3</span>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reportLang">Dil Gelisimi (1-5)</label>
+                            <input type="range" id="reportLang" min="1" max="5" value="3" oninput="updateRangeLabel(this)">
+                            <span class="range-val">3</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="reportSocial">Sosyal Beceriler (1-5)</label>
+                            <input type="range" id="reportSocial" min="1" max="5" value="3" oninput="updateRangeLabel(this)">
+                            <span class="range-val">3</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reportCreativity">Yaraticilik (1-5)</label>
+                        <input type="range" id="reportCreativity" min="1" max="5" value="3" oninput="updateRangeLabel(this)" style="max-width:calc(50% - 8px);">
+                        <span class="range-val">3</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="reportNotes">Ogretmen Notlari</label>
+                        <textarea id="reportNotes" placeholder="Ogrenci hakkinda genel degerlendirmenizi yazin..."></textarea>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn btn-primary" onclick="generateReport()">Raporu Olustur</button>
+                        <button class="btn" onclick="saveReport()">Kaydet</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rapor Onizleme -->
+            <div id="reportPreview" style="display:none;">
+                <div class="panel">
+                    <div class="panel-titlebar">
+                        <div class="panel-titlebar-left">
+                            <div class="panel-dots"><span></span><span></span><span></span></div>
+                            Rapor Onizleme
+                        </div>
+                        <button class="btn btn-sm no-print" onclick="printReport()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                            Yazdir
+                        </button>
+                    </div>
+                    <div class="panel-body" id="reportContent"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ====== MODALS ====== -->
+
+    <!-- Add Class Modal -->
+    <div class="modal-overlay" id="addClassModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span>Yeni Sinif Ekle</span>
+                <button class="modal-close" onclick="closeModal('addClassModal')">x</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newClassName">Sinif Adi</label>
+                    <input type="text" id="newClassName" placeholder="Ornek: Papatyalar Sinifi">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('addClassModal')">Iptal</button>
+                <button class="btn btn-primary" onclick="addClass()">Ekle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal-overlay" id="addStudentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span>Yeni Ogrenci Ekle</span>
+                <button class="modal-close" onclick="closeModal('addStudentModal')">x</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newStudentName">Öğrenci Adı</label>
+                    <input type="text" id="newStudentName" placeholder="Örnek: Ali">
+                </div>
+                <div class="form-group">
+                    <label for="newStudentClass">Sınıf</label>
+                    <select id="newStudentClass">
+                        <option value="">Sınıf seçin...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="newStudentParentEmail">Veli E-posta (isteğe bağlı)</label>
+                    <input type="email" id="newStudentParentEmail" placeholder="veli@ornek.com">
+                    <p style="font-size:11px;color:var(--text-light);margin-top:4px;">Velinin sisteme giriş yapacağı e-posta adresi</p>
+                </div>
+                <div class="form-group">
+                    <label>Görsel Şifre (3 ikon seçin)</label>
+                    <div class="student-chips" id="passwordIconChips"></div>
+                    <div style="margin-top:8px;font-family:var(--font-mono);font-size:12px;color:var(--text-light);">
+                        Seçilen: <span id="selectedPasswordDisplay">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('addStudentModal')">Iptal</button>
+                <button class="btn btn-primary" onclick="addStudent()">Ekle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div class="modal-overlay" id="editStudentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span>Öğrenciyi Düzenle</span>
+                <button class="modal-close" onclick="closeModal('editStudentModal')">x</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editStudentId">
+                <div class="form-group">
+                    <label for="editStudentName">Öğrenci Adı</label>
+                    <input type="text" id="editStudentName" placeholder="Örnek: Ali">
+                </div>
+                <div class="form-group">
+                    <label for="editStudentClass">Sınıf</label>
+                    <select id="editStudentClass">
+                        <option value="">Sınıf seçin...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editStudentParentEmail">Veli E-posta (isteğe bağlı)</label>
+                    <input type="email" id="editStudentParentEmail" placeholder="veli@ornek.com">
+                    <p style="font-size:11px;color:var(--text-light);margin-top:4px;">Velinin sisteme giriş yapacağı e-posta adresi</p>
+                </div>
+                <div class="form-group">
+                    <label>Görsel Şifre (3 ikon seçin)</label>
+                    <div class="student-chips" id="editPasswordIconChips"></div>
+                    <div style="margin-top:8px;font-family:var(--font-mono);font-size:12px;color:var(--text-light);">
+                        Seçilen: <span id="editSelectedPasswordDisplay">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('editStudentModal')">İptal</button>
+                <button class="btn btn-primary" onclick="saveEditedStudent()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Activity Modal -->
+    <div class="modal-overlay" id="addActivityModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span>Yeni Aktivite Ekle</span>
+                <button class="modal-close" onclick="closeModal('addActivityModal')">x</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newActivityTitle">Başlık</label>
+                    <input type="text" id="newActivityTitle" placeholder="Örnek: Renk Eşleştirme Oyunu">
+                </div>
+                <div class="form-group">
+                    <label for="newActivityType">Tür</label>
+                    <select id="newActivityType" onchange="onActivityTypeChange()">
+                        <option value="game">Oyun</option>
+                        <option value="story">Hikaye</option>
+                        <option value="homework">Ödev</option>
+                    </select>
+                </div>
+                <div class="form-group" id="gameSelectGroup">
+                    <label for="newActivityGameSelect">Yüklenmiş Oyun Seç (isteğe bağlı)</label>
+                    <select id="newActivityGameSelect">
+                        <option value="">Oyun seçin veya boş bırakın...</option>
+                    </select>
+                    <p style="font-size:11px;color:var(--text-light);margin-top:4px;">Oyun Yükle sekmesinden yüklediğiniz oyunlar burada listelenir.</p>
+                </div>
+                <div class="form-group">
+                    <label for="newActivityUrl">İçerik URL (isteğe bağlı)</label>
+                    <input type="text" id="newActivityUrl" placeholder="https://... veya yüklenmiş oyun seçin">
+                </div>
+                <div class="form-group">
+                    <label for="newActivityCover">Kapak Fotoğrafı (isteğe bağlı)</label>
+                    <input type="file" id="newActivityCover" accept="image/*" style="font-family:var(--font-sans);">
+                </div>
+                <div class="form-group">
+                    <label for="newActivityDesc">Açıklama</label>
+                    <textarea id="newActivityDesc" placeholder="Aktivite hakkında kısa açıklama..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('addActivityModal')">Iptal</button>
+                <button class="btn btn-primary" onclick="addActivity()">Ekle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Overlay -->
+    <div class="game-overlay" id="gameOverlay" style="display:none;">
+        <div class="game-header">
+            <span class="game-title" id="gameTitle">Oyun</span>
+            <button class="game-close-btn" onclick="closeGame()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Kapat
+            </button>
+        </div>
+        <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/background.js"></script>
+    <script src="dashboard.js"></script>
+
+</body>
+
+</html>

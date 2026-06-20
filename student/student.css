@@ -1,0 +1,321 @@
+/* ============================================
+   ekobirey - Ogrenci Paneli CSS
+   Okul oncesi: gorsel agirlikli, renkli, eglenceli
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    --cream: #FFF8F0;
+    --cream-dark: #F5EDE3;
+    --orange-light: #FFE4C9;
+    --orange: #F5A623;
+    --orange-dark: #E8912A;
+    --purple: #A78BFA;
+    --pink: #F472B6;
+    --green: #34D399;
+    --red: #F87171;
+    --yellow: #FBBF24;
+    --blue: #60A5FA;
+    --text-dark: #2D2015;
+    --text-mid: #6B5744;
+    --text-light: #A08B77;
+    --border-dark: #B8A696;
+    --window-bg: #FFFCF7;
+    --window-shadow: 4px 4px 0px #D4C4B0;
+    --font-mono: 'Space Mono', monospace;
+    --font-sans: 'DM Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: var(--font-sans);
+    color: var(--text-dark);
+    background: linear-gradient(to bottom, #112b3c 0%, #205375 60%, #e28743 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ====== Background (same as main) ====== */
+.stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.star { position: absolute; background: white; border-radius: 50%; animation: twinkle 2s ease-in-out infinite alternate; }
+@keyframes twinkle { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+#grass-canvas { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+/* ====== Top Bar ====== */
+.top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    height: 56px;
+    background: var(--window-bg);
+    border-bottom: 3px solid var(--border-dark);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+
+.top-bar-left, .top-bar-right { display: flex; align-items: center; gap: 8px; }
+.top-bar-center { display: flex; align-items: center; }
+.top-logo { width: 36px; height: 36px; border-radius: 6px; }
+
+.profile-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--cream-dark);
+    border: 2px solid var(--border-dark);
+    border-radius: 30px;
+    padding: 4px 14px 4px 4px;
+}
+
+.profile-pill-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--orange);
+    color: white;
+    font-size: 16px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--border-dark);
+}
+
+.profile-pill-name {
+    font-family: var(--font-mono);
+    font-size: 14px; font-weight: 700;
+}
+
+.top-btn {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 3px solid var(--text-dark);
+    background: var(--cream);
+    color: var(--text-dark);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 3px 3px 0px var(--text-dark);
+}
+.top-btn:hover { 
+    transform: scale(1.1) rotate(5deg); 
+    box-shadow: 4px 4px 0px var(--text-dark);
+}
+.top-btn:active {
+    transform: scale(0.95);
+    box-shadow: 1px 1px 0px var(--text-dark);
+}
+#soundBtn {
+    background: #DBEAFE;
+}
+#soundBtn:hover {
+    background: #60A5FA;
+}
+.top-bar-right button[onclick="studentLogout()"] {
+    background: #FEE2E2;
+}
+.top-bar-right button[onclick="studentLogout()"]:hover {
+    background: #F87171;
+    color: white;
+}
+
+/* ====== Main Content ====== */
+.student-panel { position: relative; z-index: 10; }
+.student-content {
+    margin-top: 56px;
+    padding: 24px 16px 80px;
+    max-width: 960px;
+    margin-left: auto; margin-right: auto;
+}
+
+/* ====== Game Grid - Colorful Big Cards ====== */
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 20px;
+}
+
+/* Each card has its own bright color */
+.game-card {
+    border: 3px solid var(--text-dark);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px 12px;
+    gap: 12px;
+    position: relative;
+    box-shadow: 5px 5px 0px var(--text-dark);
+}
+
+.game-card:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 8px 8px 0px var(--text-dark);
+}
+
+.game-card:active {
+    transform: translateY(2px) scale(0.98);
+    box-shadow: 2px 2px 0px var(--text-dark);
+}
+
+/* Color variations for cards */
+.card-color-0 { background: #FFD6D6; } /* pink-red */
+.card-color-1 { background: #DBEAFE; } /* blue */
+.card-color-2 { background: #FEF3C7; } /* yellow */
+.card-color-3 { background: #D1FAE5; } /* green */
+.card-color-4 { background: #EDE9FE; } /* purple */
+.card-color-5 { background: #FCE7F3; } /* pink */
+.card-color-6 { background: #FFE4C9; } /* orange */
+.card-color-7 { background: #D1F5EA; } /* teal */
+
+.game-card-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 3px solid var(--text-dark);
+    background: rgba(255,255,255,0.7);
+}
+
+.game-card-icon svg { width: 36px; height: 36px; color: var(--text-dark); }
+
+.game-card-title {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1.2;
+    max-height: 2.4em;
+    overflow: hidden;
+}
+
+/* Cards with cover photos */
+.game-card-with-cover {
+    aspect-ratio: auto;
+    padding: 0;
+    gap: 0;
+}
+
+.game-card-with-cover .game-card-cover {
+    width: 100%;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    border-bottom: 3px solid var(--text-dark);
+    border-radius: 17px 17px 0 0;
+}
+
+.game-card-with-cover .game-card-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.game-card-with-cover .game-card-title {
+    padding: 12px 14px;
+    width: 100%;
+    background: var(--window-bg);
+}
+
+/* ====== Badge Row ====== */
+.badge-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.badge-pill {
+    background: var(--window-bg);
+    border: 2px solid var(--border-dark);
+    border-radius: 30px;
+    padding: 8px 16px;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 2px 2px 0px #D4C4B0;
+}
+
+.badge-pill-icon {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--yellow);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+}
+
+.badge-pill-name {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-mid);
+}
+
+/* ====== Loading / Empty ====== */
+.loading-msg, .empty-msg {
+    text-align: center;
+    color: var(--cream-dark);
+    opacity: 0.7;
+    font-size: 15px;
+    padding: 40px;
+    grid-column: 1 / -1;
+    font-family: var(--font-mono);
+}
+
+/* ====== Game Overlay ====== */
+.game-overlay {
+    position: fixed; inset: 0;
+    z-index: 500;
+    background: var(--text-dark);
+    display: flex; flex-direction: column;
+}
+
+.game-header {
+    height: 52px;
+    background: var(--cream-dark);
+    border-bottom: 3px solid var(--border-dark);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+
+.game-title {
+    font-family: var(--font-mono);
+    font-size: 15px; font-weight: 700;
+}
+
+.game-close-btn {
+    padding: 8px 18px;
+    background: var(--red);
+    color: white;
+    border: 2px solid #DC2626;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+}
+.game-close-btn:hover { background: #DC2626; }
+
+.game-frame {
+    flex: 1;
+    border: none;
+    width: 100%;
+    background: white;
+}
+
+/* ====== Responsive ====== */
+@media (max-width: 500px) {
+    .game-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .game-card { padding: 12px 8px; }
+    .game-card-icon { width: 52px; height: 52px; }
+    .game-card-icon svg { width: 28px; height: 28px; }
+    .game-card-title { font-size: 11px; }
+    .profile-pill-name { display: none; }
+}
