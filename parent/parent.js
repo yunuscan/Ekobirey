@@ -85,11 +85,29 @@ function showSection(sectionId) {
     if (navBtn) navBtn.classList.add('active');
 
     // Close mobile sidebar
-    document.getElementById('sidebar')?.classList.remove('open');
+    if (window.innerWidth <= 768) {
+        closeSidebar();
+    }
 }
 
 function toggleSidebar() {
-    document.getElementById('sidebar')?.classList.toggle('open');
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (sidebar?.classList.contains('open')) {
+        closeSidebar();
+    } else {
+        sidebar?.classList.add('open');
+        if (backdrop) backdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    sidebar?.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
+    document.body.style.overflow = '';
 }
 
 // ====== Load Children ======

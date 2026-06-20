@@ -710,46 +710,197 @@ body {
 }
 
 /* ====== Responsive ====== */
-@media (max-width: 480px) {
+
+/* Tablets and smaller */
+@media (max-width: 768px) {
+    body {
+        align-items: flex-start;
+        padding-top: 10px;
+    }
     .login-wrapper {
         max-width: 100%;
         padding: 12px;
     }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+    body {
+        align-items: flex-start;
+        padding-top: 8px;
+        padding-bottom: env(safe-area-inset-bottom, 8px);
+    }
+    .login-wrapper {
+        max-width: 100%;
+        padding: 8px;
+    }
+    .login-card {
+        border-width: 2px;
+    }
+    .window-titlebar {
+        padding: 8px 12px;
+        border-bottom-width: 2px;
+    }
     .window-content {
-        padding: 18px 16px;
+        padding: 16px 14px;
+    }
+    .logo-container {
+        margin-bottom: 18px;
     }
     .logo-img {
-        width: 130px;
+        width: 120px;
     }
+    /* Role cards — more touch friendly */
+    .role-card {
+        padding: 14px 14px;
+        gap: 12px;
+    }
+    .role-icon-box {
+        width: 40px;
+        height: 40px;
+    }
+    .role-label {
+        font-size: 0.95rem;
+    }
+    /* Back button bigger touch target */
+    .back-btn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        margin-bottom: 14px;
+    }
+    /* Form inputs — bigger touch targets */
+    .form-group input {
+        padding: 13px 14px;
+        font-size: 1rem;
+    }
+    .login-btn {
+        padding: 14px;
+        font-size: 1rem;
+    }
+    /* Avatar grid */
     .avatar-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: 8px;
+    }
+    .avatar-card {
+        padding: 12px 6px;
     }
     .avatar-letter {
         width: 38px;
         height: 38px;
         font-size: 0.95rem;
     }
-    .visual-password-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+    .avatar-name {
+        font-size: 0.78rem;
+        word-break: break-word;
+        text-align: center;
+    }
+    /* Visual password */
+    .visual-password-display {
+        gap: 10px;
+        margin-bottom: 14px;
     }
     .password-slot {
-        width: 50px;
-        height: 50px;
+        width: 52px;
+        height: 52px;
         font-size: 1.2rem;
+    }
+    .visual-password-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+    }
+    .password-icon-btn {
+        padding: 8px 4px;
+    }
+    .password-icon-btn svg {
+        width: 30px;
+        height: 30px;
+    }
+    /* Don't show tooltip on touch — it overlaps */
+    .password-icon-btn::after {
+        display: none;
     }
     .password-actions {
         flex-direction: column;
+        gap: 8px;
+    }
+    .password-actions .clear-btn,
+    .password-actions .submit-password-btn {
+        padding: 14px;
+        font-size: 1rem;
+    }
+    /* Form links */
+    .form-links {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+    .form-links a {
+        font-size: 0.88rem;
+        padding: 4px 0;
+    }
+    /* Sound toggle on mobile — bigger and safer placement */
+    .sound-toggle-btn {
+        bottom: 12px;
+        right: 12px;
+        width: 48px;
+        height: 48px;
     }
 }
 
+/* Very small phones */
 @media (max-width: 360px) {
+    .login-wrapper {
+        padding: 6px;
+    }
+    .window-content {
+        padding: 14px 12px;
+    }
+    .logo-img {
+        width: 100px;
+    }
     .avatar-grid {
         grid-template-columns: repeat(2, 1fr);
     }
     .visual-password-grid {
         grid-template-columns: repeat(3, 1fr);
+    }
+    .password-slot {
+        width: 46px;
+        height: 46px;
+        font-size: 1.1rem;
+    }
+    .section-hint {
+        font-size: 0.82rem;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    body {
+        align-items: flex-start;
+    }
+    .login-wrapper {
+        padding: 8px;
+        max-width: 480px;
+    }
+    .logo-img {
+        width: 80px;
+    }
+    .logo-container {
+        margin-bottom: 12px;
+    }
+    .window-content {
+        padding: 12px 14px;
+    }
+    .visual-password-grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+    }
+    .password-slot {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
     }
 }
 
@@ -778,6 +929,7 @@ body {
     height: 10px;
     top: -20px;
     border-radius: 2px;
+}
 /* ====== Sound Toggle Button ====== */
 .sound-toggle-btn {
     position: fixed;

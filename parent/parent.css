@@ -563,14 +563,211 @@ body {
 .toast-error { border-color: #EF4444; color: #991B1B; }
 
 /* ====== Responsive ====== */
+
+/* Sidebar overlay backdrop */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(45, 32, 21, 0.5);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.sidebar-backdrop.active {
+    display: block;
+    opacity: 1;
+}
+
 @media (max-width: 768px) {
-    .sidebar { transform: translateX(-100%); }
-    .sidebar.open { transform: translateX(0); }
-    .main-content { margin-left: 0; padding: 16px; }
-    .mobile-header { display: flex; }
-    .stats-row { grid-template-columns: repeat(2, 1fr); }
-    .game-grid { grid-template-columns: repeat(2, 1fr); }
-    .badge-grid { grid-template-columns: repeat(2, 1fr); }
+    /* Sidebar becomes off-canvas drawer */
+    .sidebar {
+        width: 260px;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 200;
+        box-shadow: none;
+    }
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 6px 0 24px rgba(0, 0, 0, 0.2);
+    }
+    .main-content {
+        margin-left: 0;
+        padding: 16px 12px;
+    }
+    .mobile-header {
+        display: flex;
+    }
+    .menu-toggle {
+        border: 2px solid var(--border-dark);
+        background: var(--cream);
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        font-size: 20px;
+        cursor: pointer;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 2px 2px 0px #D4C4B0;
+    }
+    .menu-toggle:active {
+        transform: translate(1px, 1px);
+        box-shadow: 0 0 0;
+    }
+
+    /* Stats row */
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .stat-card {
+        padding: 14px;
+    }
+    .stat-value {
+        font-size: 24px;
+    }
+
+    /* Grids */
+    .game-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    .badge-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    /* Page header */
+    .page-title {
+        font-size: 18px;
+    }
+    .page-subtitle {
+        font-size: 13px;
+    }
+
+    /* Tabs scroll horizontally */
+    .tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        padding-bottom: 2px;
+    }
+    .tab-btn {
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding: 10px 14px;
+    }
+
+    /* Child selector */
+    .child-selector {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .child-selector select {
+        width: 100%;
+    }
+
+    /* Date filter */
+    .date-filter {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .date-filter input {
+        width: 100%;
+    }
+
+    /* Buttons touch friendly */
+    .btn {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+    /* Panel body scroll */
+    .panel-body {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Toast */
+    .toast {
+        left: 12px;
+        right: 12px;
+        transform: translateX(0);
+        text-align: center;
+    }
+    .toast.show {
+        bottom: 16px;
+    }
+
+    /* Timeline items */
+    .timeline-item {
+        gap: 12px;
+    }
+    .timeline-dot {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+    .timeline-title {
+        font-size: 13px;
+    }
+
+    /* Report cards */
+    .report-card {
+        padding: 16px;
+    }
+
+    /* Message cards */
+    .message-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    /* Form fields */
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        padding: 12px;
+        font-size: 15px;
+    }
+
+    /* Game overlay — full width game title */
+    .game-header {
+        padding: 0 12px;
+    }
+    .game-title {
+        font-size: 13px;
+    }
+    .game-close-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 400px) {
+    .main-content {
+        padding: 12px 8px;
+    }
+    .stats-row {
+        grid-template-columns: 1fr;
+    }
+    .game-grid {
+        grid-template-columns: 1fr;
+    }
+    .badge-grid {
+        grid-template-columns: 1fr;
+    }
+    .page-title {
+        font-size: 16px;
+    }
 }
 
 /* ====== Message Badges ====== */
@@ -596,3 +793,4 @@ body {
     color: var(--orange-dark);
     border-color: var(--orange);
 }
+

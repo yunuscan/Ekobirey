@@ -311,11 +311,136 @@ body {
 }
 
 /* ====== Responsive ====== */
-@media (max-width: 500px) {
-    .game-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .game-card { padding: 12px 8px; }
-    .game-card-icon { width: 52px; height: 52px; }
-    .game-card-icon svg { width: 28px; height: 28px; }
-    .game-card-title { font-size: 11px; }
-    .profile-pill-name { display: none; }
+@media (max-width: 600px) {
+    .game-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    .game-card {
+        padding: 14px 10px;
+        border-radius: 16px;
+        box-shadow: 4px 4px 0px var(--text-dark);
+    }
+    .game-card-icon {
+        width: 56px;
+        height: 56px;
+    }
+    .game-card-icon svg {
+        width: 28px;
+        height: 28px;
+    }
+    .game-card-title {
+        font-size: 12px;
+    }
+    .student-content {
+        padding: 16px 12px 80px;
+    }
+    /* Top bar adjustments */
+    .top-bar {
+        padding: 0 10px;
+        height: 52px;
+    }
+    .top-btn {
+        width: 38px;
+        height: 38px;
+        border-width: 2px;
+        box-shadow: 2px 2px 0px var(--text-dark);
+    }
+    .top-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+    .profile-pill {
+        padding: 3px 10px 3px 3px;
+    }
+    .profile-pill-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
+    .profile-pill-name {
+        display: none;
+    }
+    .top-logo {
+        width: 30px;
+        height: 30px;
+    }
+    /* Badge row */
+    .badge-row {
+        gap: 8px;
+    }
+    .badge-pill {
+        padding: 6px 12px;
+        font-size: 10px;
+    }
+    /* Game overlay */
+    .game-header {
+        height: 48px;
+        padding: 0 10px;
+    }
+    .game-title {
+        font-size: 13px;
+    }
+    .game-close-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+    .game-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .game-card {
+        padding: 10px 8px;
+        gap: 8px;
+    }
+    .game-card-icon {
+        width: 44px;
+        height: 44px;
+    }
+    .game-card-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+    .game-card-title {
+        font-size: 11px;
+    }
+    .student-content {
+        padding: 12px 8px 80px;
+    }
+    .top-bar-right {
+        gap: 6px;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .game-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+    .game-card {
+        padding: 8px 6px;
+        gap: 6px;
+    }
+    .game-card-icon {
+        width: 40px;
+        height: 40px;
+    }
+    .game-card-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+    .game-card-title {
+        font-size: 10px;
+    }
+    .student-content {
+        padding: 10px 12px 40px;
+    }
+    .top-bar {
+        height: 44px;
+    }
 }

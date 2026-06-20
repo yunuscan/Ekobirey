@@ -62,13 +62,16 @@
         </div>
     </aside>
 
+    <!-- Sidebar Backdrop (for mobile) -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
     <!-- Main Content -->
     <main class="main-content">
 
         <!-- Mobile Header -->
         <div class="mobile-header">
-            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-            <span>ekobirey</span>
+            <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menü">☰</button>
+            <span style="font-family:var(--font-mono);font-weight:700;font-size:16px;color:var(--orange-dark);flex:1;">ekobirey</span>
         </div>
 
         <!-- Child Selector (if parent has multiple children) -->

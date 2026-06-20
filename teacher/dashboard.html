@@ -16,7 +16,7 @@
     <canvas id="grass-canvas"></canvas>
 
     <!-- ====== SIDEBAR ====== -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <img src="../img/ekobirey-logo.webp" alt="Logo" class="sidebar-logo">
             <span class="sidebar-brand">ekobirey</span>
@@ -61,8 +61,17 @@
         </div>
     </aside>
 
+    <!-- Sidebar Backdrop (for mobile) -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
     <!-- ====== MAIN CONTENT ====== -->
     <main class="main-content">
+
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menü">☰</button>
+            <span class="mobile-brand">ekobirey</span>
+        </div>
 
         <!-- ===== GENEL BAKIS ===== -->
         <div class="section active" id="sectionOverview">
