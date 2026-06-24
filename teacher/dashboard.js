@@ -80,6 +80,10 @@ function showSection(sectionId) {
     const navBtn = document.getElementById('nav' + sectionId.charAt(0).toUpperCase() + sectionId.slice(1));
     if (navBtn) navBtn.classList.add('active');
 
+    if (sectionId === 'library') {
+        loadLibraryContents();
+    }
+
     // Close sidebar on mobile after navigation
     if (window.innerWidth <= 768) {
         closeSidebar();
@@ -108,7 +112,7 @@ function closeSidebar() {
 
 // ====== Load All Data ======
 async function loadAllData() {
-    await Promise.all([loadClasses(), loadStudents(), loadActivities(), loadSentMessages(), loadParentProfiles()]);
+    await Promise.all([loadClasses(), loadStudents(), loadActivities(), loadSentMessages(), loadParentProfiles(), loadBadgesList()]);
     updateStats();
     populateSelects();
     populateGameSelect();
@@ -286,6 +290,7 @@ function renderStudents(filterClass, showArchived) {
             <td style="font-size:12px;color:var(--text-light);">${esc(s.parent_email || '-')}</td>
             <td><span class="badge ${s.is_archived ? 'badge-archived' : 'badge-active'}">${s.is_archived ? 'Arşiv' : 'Aktif'}</span></td>
             <td>
+                <button class="btn btn-sm btn-primary" onclick="openAwardBadgeModal('${s.id}')" style="box-shadow: 1px 1px 0px var(--orange-dark); margin-right: 4px;">Rozet Ver</button>
                 <button class="btn btn-sm" onclick="openEditStudentModal('${s.id}')">Düzenle</button>
                 <button class="btn btn-sm" onclick="toggleArchive('${s.id}', ${!s.is_archived})">${archiveLabel}</button>
                 ${s.is_archived ? `<button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.id}')">Sil</button>` : ''}
@@ -561,59 +566,108 @@ async function addActivity() {
     const gameSelect = document.getElementById('newActivityGameSelect');
     const urlInput = document.getElementById('newActivityUrl');
     const coverInput = document.getElementById('newActivityCover');
+    const pdfInput = document.getElementById('newActivityPdfFile');
     let contentUrl = urlInput?.value.trim() || '';
     let thumbnailUrl = null;
+
+    if (!title) { showToast('Başlık girin', 'error'); return; }
 
     // If user selected a game from dropdown, use that
     if (type === 'game' && gameSelect?.value) {
         contentUrl = gameSelect.value;
     }
 
-    if (!title) { showToast('Başlık girin', 'error'); return; }
+    // Helper for final activity insertion
+    const saveActivityRecord = async (finalContentUrl, finalThumbUrl) => {
+        if (isSupabaseConnected()) {
+            try {
+                const { error } = await supabaseClient.from('activities').insert({
+                    title, type, description: desc,
+                    content_url: finalContentUrl || null,
+                    thumbnail: finalThumbUrl,
+                    teacher_id: currentTeacher.id
+                });
+                if (error) throw new Error('Aktivite tablosu RLS hatası: ' + error.message);
+            } catch (e) { showToast('Hata: ' + e.message, 'error'); return; }
+        } else {
+            activitiesData.push({ id: 'a' + Date.now(), title, type, description: desc, content_url: finalContentUrl, thumbnail: finalThumbUrl, created_at: new Date().toISOString() });
+        }
+        
+        // Clean up & refresh
+        closeModal('addActivityModal');
+        document.getElementById('newActivityTitle').value = '';
+        document.getElementById('newActivityDesc').value = '';
+        if (urlInput) urlInput.value = '';
+        if (gameSelect) gameSelect.value = '';
+        if (coverInput) coverInput.value = '';
+        if (pdfInput) pdfInput.value = '';
+        await loadAllData(); // reload lists and library
+        showToast('Aktivite eklendi');
+    };
 
-    // Upload cover photo if provided
-    if (coverInput?.files?.[0] && isSupabaseConnected()) {
-        try {
+    try {
+        // 1. Upload cover photo if provided
+        if (coverInput?.files?.[0] && isSupabaseConnected()) {
             const file = coverInput.files[0];
             const coverName = 'cover_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
             const { error: upErr } = await supabaseClient.storage.from('covers').upload(coverName, file, { contentType: file.type, upsert: false });
             if (upErr) throw new Error('Aktivite kapak resmi storage yüklemesinde RLS/Yetki hatası: ' + upErr.message);
             const { data: urlD } = supabaseClient.storage.from('covers').getPublicUrl(coverName);
             thumbnailUrl = urlD.publicUrl;
-        } catch (e) { showToast('Hata: ' + e.message, 'error'); return; }
-    }
+        }
 
-    if (isSupabaseConnected()) {
-        try {
-            const { error } = await supabaseClient.from('activities').insert({
-                title, type, description: desc,
-                content_url: contentUrl || null,
-                thumbnail: thumbnailUrl,
-                teacher_id: currentTeacher.id
-            });
-            if (error) throw new Error('Aktivite tablosu RLS hatası: ' + error.message);
-        } catch (e) { showToast('Hata: ' + e.message, 'error'); return; }
-    } else {
-        activitiesData.push({ id: 'a' + Date.now(), title, type, description: desc, content_url: contentUrl, thumbnail: thumbnailUrl, created_at: new Date().toISOString() });
+        // 2. Upload PDF file to storage (if story & PDF selected)
+        if (type === 'story' && pdfInput?.files?.[0]) {
+            const file = pdfInput.files[0];
+            if (isSupabaseConnected()) {
+                const fileName = 'story_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const { error: upErr } = await supabaseClient.storage.from('stories').upload(fileName, file, { contentType: 'application/pdf', upsert: false });
+                if (upErr) throw new Error('PDF storage yüklemesinde hata: ' + upErr.message);
+                const { data: urlD } = supabaseClient.storage.from('stories').getPublicUrl(fileName);
+                contentUrl = urlD.publicUrl;
+                await saveActivityRecord(contentUrl, thumbnailUrl);
+            } else {
+                // Offline Base64 mode
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    contentUrl = e.target.result;
+                    await saveActivityRecord(contentUrl, thumbnailUrl);
+                };
+                reader.readAsDataURL(file);
+            }
+        } else {
+            // Non-PDF activities or optional URL story
+            await saveActivityRecord(contentUrl, thumbnailUrl);
+        }
+    } catch (err) {
+        showToast('Hata: ' + err.message, 'error');
     }
-
-    closeModal('addActivityModal');
-    document.getElementById('newActivityTitle').value = '';
-    document.getElementById('newActivityDesc').value = '';
-    if (urlInput) urlInput.value = '';
-    if (gameSelect) gameSelect.value = '';
-    if (coverInput) coverInput.value = '';
-    await loadActivities();
-    populateSelects();
-    updateStats();
-    showToast('Aktivite eklendi');
 }
 
 // Show/hide game select based on activity type
 function onActivityTypeChange() {
     const type = document.getElementById('newActivityType').value;
     const gameGroup = document.getElementById('gameSelectGroup');
+    const pdfGroup = document.getElementById('pdfUploadGroup');
+    const urlGroup = document.getElementById('urlInputGroup');
+    
     if (gameGroup) gameGroup.style.display = (type === 'game') ? 'block' : 'none';
+    if (pdfGroup) pdfGroup.style.display = (type === 'story') ? 'block' : 'none';
+    
+    if (urlGroup) {
+        if (type === 'homework') {
+            urlGroup.style.display = 'block';
+            document.getElementById('newActivityUrlLabel').textContent = 'İçerik URL (isteğe bağlı)';
+        } else if (type === 'game') {
+            urlGroup.style.display = 'block';
+            document.getElementById('newActivityUrlLabel').textContent = 'Manuel Oyun URL (Yüklenmiş seçilmediyse)';
+        } else if (type === 'story') {
+            urlGroup.style.display = 'block';
+            document.getElementById('newActivityUrlLabel').textContent = 'Manuel Hikaye URL (PDF seçilmediyse)';
+        } else {
+            urlGroup.style.display = 'block';
+        }
+    }
 }
 
 // Populate game select with uploaded games
@@ -1260,4 +1314,538 @@ function formatDate(dateStr) {
         }
         return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
     } catch { return '-'; }
+}
+
+// ============================================
+// Library & 3D Flipbook Functions
+// ============================================
+let currentLibraryTab = 'stories';
+let storyPdfDoc = null;
+let storyCurrentLeaf = 0;
+let storyScale = 1.0;
+let storyLeavesCount = 0;
+let storyTotalPages = 0;
+let storyLeaves = [];
+
+function switchLibraryTab(tabId) {
+    currentLibraryTab = tabId;
+    document.querySelectorAll('#sectionLibrary .tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#sectionLibrary .tab-content').forEach(c => c.classList.remove('active'));
+
+    const tabMap = { stories: 'tabLibraryStories', games: 'tabLibraryGames', bucket: 'tabLibraryBucket' };
+    const targetEl = document.getElementById(tabMap[tabId]);
+    if (targetEl) targetEl.classList.add('active');
+    
+    // Highlight clicked button
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
+    
+    if (tabId === 'bucket') {
+        loadStorageBucketFiles();
+    } else {
+        renderLibraryLists();
+    }
+}
+
+function loadLibraryContents() {
+    renderLibraryLists();
+}
+
+function renderLibraryLists() {
+    const storiesList = document.getElementById('libraryStoriesList');
+    const gamesList = document.getElementById('libraryGamesList');
+    
+    if (!storiesList || !gamesList) return;
+    
+    const teacherStories = activitiesData.filter(a => a.type === 'story');
+    const teacherGames = activitiesData.filter(a => a.type === 'game');
+    
+    if (currentLibraryTab === 'stories') {
+        if (teacherStories.length === 0) {
+            storiesList.innerHTML = '<div class="empty-state"><p>Henüz hikaye eklenmemiş</p></div>';
+        } else {
+            storiesList.innerHTML = teacherStories.map(s => {
+                const thumb = s.thumbnail ? `<img src="${esc(s.thumbnail)}">` : `<div class="library-card-icon">📖</div>`;
+                const pdfUrl = getStoryUrl(s.content_url);
+                return `
+                    <div class="library-card">
+                        <div class="library-card-cover">${thumb}</div>
+                        <div class="library-card-body">
+                            <div class="library-card-title">${esc(s.title)}</div>
+                            <div class="library-card-desc">${esc(s.description || 'Açıklama belirtilmemiş.')}</div>
+                            <div class="library-card-footer">
+                                <button class="btn btn-sm btn-primary" onclick="openStoryViewer('${esc(pdfUrl)}', '${esc(s.title)}')">Oku</button>
+                                <button class="btn btn-sm" onclick="deleteLibraryActivity('${s.id}')">Sil</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } else if (currentLibraryTab === 'games') {
+        if (teacherGames.length === 0) {
+            gamesList.innerHTML = '<div class="empty-state"><p>Henüz oyun eklenmemiş</p></div>';
+        } else {
+            gamesList.innerHTML = teacherGames.map(g => {
+                const thumb = g.thumbnail ? `<img src="${esc(g.thumbnail)}">` : `<div class="library-card-icon">🎮</div>`;
+                return `
+                    <div class="library-card">
+                        <div class="library-card-cover">${thumb}</div>
+                        <div class="library-card-body">
+                            <div class="library-card-title">${esc(g.title)}</div>
+                            <div class="library-card-desc">${esc(g.description || 'Açıklama belirtilmemiş.')}</div>
+                            <div class="library-card-footer">
+                                <button class="btn btn-sm btn-primary" onclick="openGame('${esc(g.title)}', '${esc(g.content_url)}')">Oyna</button>
+                                <button class="btn btn-sm" onclick="deleteLibraryActivity('${g.id}')">Sil</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+}
+
+function getStoryUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+        return url;
+    }
+    if (isSupabaseConnected()) {
+        const { data } = supabaseClient.storage.from('stories').getPublicUrl(url);
+        return data?.publicUrl || '';
+    }
+    return '';
+}
+
+async function deleteLibraryActivity(id) {
+    if (confirm('Bu içeriği silmek istediğinizden emin misiniz?')) {
+        await deleteActivity(id);
+        renderLibraryLists();
+    }
+}
+
+// 3D Flipbook Page Turn Sound (Web Audio Synthesizer)
+function playPageTurnSound() {
+    // Muted by user request
+    return;
+}
+
+// Dynamic canvas renderer for PDF.js pages
+async function renderPDFPage(pdfDoc, pageNum, canvas) {
+    try {
+        const page = await pdfDoc.getPage(pageNum);
+        const ctx = canvas.getContext('2d');
+        
+        // Target size matches viewport page size (half book width 430px, height 580px)
+        // Render at 1.8x for high clarity text and fast speed
+        const desiredHeight = 580 * 1.8;
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = desiredHeight / viewport.height;
+        const scaledViewport = page.getViewport({ scale: scale });
+        
+        canvas.height = scaledViewport.height;
+        canvas.width = scaledViewport.width;
+        
+        const renderContext = {
+            canvasContext: ctx,
+            viewport: scaledViewport
+        };
+        await page.render(renderContext).promise;
+    } catch (e) {
+        console.error('Render page error for page ' + pageNum, e);
+    }
+}
+
+async function openStoryViewer(pdfUrl, title) {
+    document.getElementById('storyTitle').textContent = title;
+    document.getElementById('storyLoading').style.display = 'block';
+    document.getElementById('storyBook').style.display = 'none';
+    document.getElementById('storyOverlay').style.display = 'flex';
+    
+    storyCurrentLeaf = 0;
+    storyScale = 1.0;
+    document.getElementById('storyBook').style.transform = 'scale(1.0)';
+    
+    try {
+        if (!window.pdfjsLib) {
+            throw new Error('PDF.js kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.');
+        }
+        
+        const loadingTask = window.pdfjsLib.getDocument(pdfUrl);
+        storyPdfDoc = await loadingTask.promise;
+        storyTotalPages = storyPdfDoc.numPages;
+        storyLeavesCount = Math.ceil(storyTotalPages / 2);
+        
+        const bookContainer = document.getElementById('storyBook');
+        bookContainer.innerHTML = '';
+        
+        const leafElements = [];
+        for (let i = 0; i < storyLeavesCount; i++) {
+            const leaf = document.createElement('div');
+            leaf.className = 'book-leaf';
+            
+            // Front Page (Right page when opening)
+            const frontPageNum = i * 2 + 1;
+            const frontDiv = document.createElement('div');
+            frontDiv.className = 'book-page front';
+            const frontCanvas = document.createElement('canvas');
+            frontDiv.appendChild(frontCanvas);
+            leaf.appendChild(frontDiv);
+            
+            // Back Page (Left page when flipped)
+            const backPageNum = i * 2 + 2;
+            const backDiv = document.createElement('div');
+            backDiv.className = 'book-page back';
+            if (backPageNum <= storyTotalPages) {
+                const backCanvas = document.createElement('canvas');
+                backDiv.appendChild(backCanvas);
+                leaf.appendChild(backDiv);
+            } else {
+                backDiv.innerHTML = '<div style="color:var(--text-light); font-family:var(--font-mono); font-size:14px; font-weight:700;">Son</div>';
+                leaf.appendChild(backDiv);
+            }
+            
+            bookContainer.appendChild(leaf);
+            leafElements.push(leaf);
+            
+            // Asynchronous rendering of canvases
+            renderPDFPage(storyPdfDoc, frontPageNum, frontCanvas);
+            if (backPageNum <= storyTotalPages) {
+                const backCanvas = leaf.querySelector('.book-page.back canvas');
+                if (backCanvas) renderPDFPage(storyPdfDoc, backPageNum, backCanvas);
+            }
+        }
+        
+        storyLeaves = leafElements;
+        updateStoryNavigation();
+        
+        document.getElementById('storyLoading').style.display = 'none';
+        document.getElementById('storyBook').style.display = 'block';
+    } catch (err) {
+        console.error('PDF Load Error:', err);
+        showToast('Hata: PDF yüklenemedi. ' + err.message, 'error');
+        closeStory();
+    }
+}
+
+function updateStoryNavigation() {
+    for (let i = 0; i < storyLeaves.length; i++) {
+        const leaf = storyLeaves[i];
+        if (i < storyCurrentLeaf) {
+            leaf.classList.add('flipped');
+            leaf.style.zIndex = 10 + i;
+        } else {
+            leaf.classList.remove('flipped');
+            leaf.style.zIndex = 100 - i;
+        }
+    }
+    
+    let pageText = '';
+    if (storyCurrentLeaf === 0) {
+        pageText = `Kapak (Sayfa 1 / ${storyTotalPages})`;
+    } else {
+        const startPage = storyCurrentLeaf * 2;
+        const endPage = Math.min(storyCurrentLeaf * 2 + 1, storyTotalPages);
+        pageText = `Sayfa ${startPage} - ${endPage} / ${storyTotalPages}`;
+    }
+    document.getElementById('storyPageIndicator').textContent = pageText;
+    
+    document.getElementById('storyPrevBtn').disabled = (storyCurrentLeaf === 0);
+    document.getElementById('storyNextBtn').disabled = (storyCurrentLeaf >= storyLeavesCount);
+}
+
+function nextStoryPage() {
+    if (storyCurrentLeaf < storyLeavesCount) {
+        storyCurrentLeaf++;
+        updateStoryNavigation();
+        playPageTurnSound();
+    }
+}
+
+function prevStoryPage() {
+    if (storyCurrentLeaf > 0) {
+        storyCurrentLeaf--;
+        updateStoryNavigation();
+        playPageTurnSound();
+    }
+}
+
+function zoomStory(amount) {
+    storyScale = Math.max(0.4, Math.min(2.0, storyScale + amount));
+    const book = document.getElementById('storyBook');
+    if (book) book.style.transform = `scale(${storyScale})`;
+}
+
+function closeStory() {
+    document.getElementById('storyOverlay').style.display = 'none';
+    storyPdfDoc = null;
+    storyLeaves = [];
+}
+
+// Keydown navigation event handler
+document.addEventListener('keydown', (e) => {
+    const overlay = document.getElementById('storyOverlay');
+    if (overlay && overlay.style.display === 'flex') {
+        if (e.key === 'ArrowRight') {
+            nextStoryPage();
+        } else if (e.key === 'ArrowLeft') {
+            prevStoryPage();
+        } else if (e.key === 'Escape') {
+            closeStory();
+        }
+    }
+});
+
+// ============================================
+// Student Badge Allocation & Bucket File Listing
+// ============================================
+let badgesData = [];
+let selectedBadgeIdToAward = null;
+
+async function loadBadgesList() {
+    if (!isSupabaseConnected()) {
+        badgesData = [
+            { id: 'b1', name: 'Kitap Kurdu', description: 'Hikayeleri dinlemeyi cok seviyorsun!', icon: 'book', category: 'language' },
+            { id: 'b2', name: 'Hizli Dusunur', description: 'Mantik oyunlarinda harikasin!', icon: 'bolt', category: 'logic' }
+        ];
+        return;
+    }
+    try {
+        const { data, error } = await supabaseClient.from('badges').select('*').order('name');
+        if (error) throw error;
+        badgesData = data || [];
+    } catch (e) {
+        console.error('Badges load error:', e);
+    }
+}
+
+function openAwardBadgeModal(studentId) {
+    const student = studentsData.find(s => s.id === studentId);
+    if (!student) return;
+    
+    document.getElementById('awardBadgeStudentId').value = studentId;
+    document.getElementById('awardBadgeStudentName').textContent = student.name;
+    selectedBadgeIdToAward = null;
+    
+    const grid = document.getElementById('badgeSelectionGrid');
+    if (!grid) return;
+    
+    if (badgesData.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-light); padding: 20px;">Sistemde rozet tanımlı değil.</div>';
+    } else {
+        const categoryColors = { nature: '#34D399', logic: '#60A5FA', language: '#F5A623', motor: '#F472B6', general: '#FBBF24', creativity: '#A78BFA', social: '#FB923C' };
+        grid.innerHTML = badgesData.map(b => {
+            const color = categoryColors[b.category] || '#FBBF24';
+            return `
+                <div class="badge-select-card" id="badge-card-${b.id}" onclick="selectBadgeToAward('${b.id}')">
+                    <div class="badge-select-icon" style="background: ${color};">
+                        ★
+                    </div>
+                    <div class="badge-select-info">
+                        <div class="badge-select-name">${esc(b.name)}</div>
+                        <div class="badge-select-desc" title="${esc(b.description)}">${esc(b.description || '')}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    openModal('awardBadgeModal');
+}
+
+function selectBadgeToAward(badgeId) {
+    selectedBadgeIdToAward = badgeId;
+    document.querySelectorAll('.badge-select-card').forEach(el => el.classList.remove('selected'));
+    document.getElementById('badge-card-' + badgeId)?.classList.add('selected');
+}
+
+async function awardBadgeSubmit() {
+    const studentId = document.getElementById('awardBadgeStudentId').value;
+    if (!studentId) {
+        showToast('Öğrenci kimliği bulunamadı.', 'error');
+        return;
+    }
+    if (!selectedBadgeIdToAward) {
+        showToast('Lütfen verilecek bir rozet seçin.', 'error');
+        return;
+    }
+    
+    if (isSupabaseConnected()) {
+        try {
+            const { error } = await supabaseClient.from('student_badges').insert({
+                student_id: studentId,
+                badge_id: selectedBadgeIdToAward
+            });
+            if (error) {
+                if (error.code === '23505') {
+                    throw new Error('Bu öğrenciye bu rozet zaten verilmiş!');
+                }
+                throw error;
+            }
+        } catch (e) {
+            showToast(e.message, 'error');
+            return;
+        }
+    } else {
+        showToast('Demo modunda rozet atandı (Kaydedilmedi)');
+    }
+    
+    closeModal('awardBadgeModal');
+    showToast('Rozet başarıyla verildi!');
+}
+
+async function loadStorageBucketFiles() {
+    const gamesList = document.getElementById('bucketGamesList');
+    const storiesList = document.getElementById('bucketStoriesList');
+    
+    if (!gamesList || !storiesList) return;
+    
+    gamesList.innerHTML = '<div class="loading-msg" style="color: var(--text-light); padding: 20px;">Oyun dosyaları taranıyor...</div>';
+    storiesList.innerHTML = '<div class="loading-msg" style="color: var(--text-light); padding: 20px;">Hikaye dosyaları taranıyor...</div>';
+    
+    if (!isSupabaseConnected()) {
+        gamesList.innerHTML = '<div class="empty-state"><p>Demo modunda storage listelenemez.</p></div>';
+        storiesList.innerHTML = '<div class="empty-state"><p>Demo modunda storage listelenemez.</p></div>';
+        return;
+    }
+    
+    try {
+        const { data: bucketGames, error: errGames } = await supabaseClient.storage.from('games').list('', { limit: 100 });
+        const { data: bucketStories, error: errStories } = await supabaseClient.storage.from('stories').list('', { limit: 100 });
+        
+        if (errGames) throw new Error('Oyun bucket listeleme hatası: ' + errGames.message);
+        if (errStories) throw new Error('Hikaye bucket listeleme hatası: ' + errStories.message);
+        
+        const importedGameUrls = activitiesData.filter(a => a.type === 'game').map(a => a.content_url || '');
+        const gamesHtml = (bucketGames || [])
+            .filter(f => f.name !== '.emptyFolderPlaceholder')
+            .map(f => {
+                const isImported = importedGameUrls.some(url => url.endsWith(f.name));
+                const actionBtn = isImported
+                    ? '<span style="font-size: 12px; color: var(--green-dark); font-weight: 700;">✓ Kütüphanede</span>'
+                    : `<button class="btn btn-sm btn-primary" onclick="openImportBucketFileModal('${esc(f.name)}', 'game')">İçe Aktar</button>`;
+                
+                return `
+                    <div class="library-card">
+                        <div class="library-card-cover">
+                            <div class="library-card-icon">🎮</div>
+                        </div>
+                        <div class="library-card-body">
+                            <div class="library-card-title" title="${esc(f.name)}">${esc(f.name)}</div>
+                            <div class="library-card-desc">Boyut: ${(f.metadata?.size / 1024 || 0).toFixed(1)} KB</div>
+                            <div class="library-card-footer">
+                                ${actionBtn}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+        gamesList.innerHTML = gamesHtml || '<div class="empty-state"><p>Games bucketında dosya bulunamadı.</p></div>';
+        
+        const importedStoryUrls = activitiesData.filter(a => a.type === 'story').map(a => a.content_url || '');
+        const storiesHtml = (bucketStories || [])
+            .filter(f => f.name !== '.emptyFolderPlaceholder')
+            .map(f => {
+                const isImported = importedStoryUrls.some(url => url.endsWith(f.name));
+                const actionBtn = isImported
+                    ? '<span style="font-size: 12px; color: var(--green-dark); font-weight: 700;">✓ Kütüphanede</span>'
+                    : `<button class="btn btn-sm btn-primary" onclick="openImportBucketFileModal('${esc(f.name)}', 'story')">İçe Aktar</button>`;
+                
+                return `
+                    <div class="library-card">
+                        <div class="library-card-cover">
+                            <div class="library-card-icon">📖</div>
+                        </div>
+                        <div class="library-card-body">
+                            <div class="library-card-title" title="${esc(f.name)}">${esc(f.name)}</div>
+                            <div class="library-card-desc">Boyut: ${(f.metadata?.size / 1024 / 1024 || 0).toFixed(2)} MB</div>
+                            <div class="library-card-footer">
+                                ${actionBtn}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+        storiesList.innerHTML = storiesHtml || '<div class="empty-state"><p>Stories bucketında dosya bulunamadı.</p></div>';
+        
+    } catch (e) {
+        gamesList.innerHTML = `<div class="empty-state"><p>Hata: ${esc(e.message)}</p></div>`;
+        storiesList.innerHTML = `<div class="empty-state"><p>Hata: ${esc(e.message)}</p></div>`;
+    }
+}
+
+function openImportBucketFileModal(fileName, type) {
+    document.getElementById('importBucketFileName').value = fileName;
+    document.getElementById('importBucketType').value = type;
+    document.getElementById('importBucketFileLabel').value = fileName;
+    
+    document.getElementById('importActivityTitle').value = fileName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+    document.getElementById('importActivityDesc').value = '';
+    const coverInput = document.getElementById('importActivityCover');
+    if (coverInput) coverInput.value = '';
+    
+    openModal('importBucketFileModal');
+}
+
+async function importBucketFileSubmit() {
+    const fileName = document.getElementById('importBucketFileName').value;
+    const type = document.getElementById('importBucketType').value;
+    const title = document.getElementById('importActivityTitle').value.trim();
+    const desc = document.getElementById('importActivityDesc').value.trim();
+    const coverInput = document.getElementById('importActivityCover');
+    
+    if (!title) {
+        showToast('Lütfen bir başlık girin.', 'error');
+        return;
+    }
+    
+    let contentUrl = '';
+    let thumbnailUrl = null;
+    
+    if (isSupabaseConnected()) {
+        try {
+            const { data: urlD } = supabaseClient.storage.from(type === 'game' ? 'games' : 'stories').getPublicUrl(fileName);
+            contentUrl = urlD?.publicUrl || '';
+            
+            if (coverInput?.files?.[0]) {
+                const file = coverInput.files[0];
+                const coverName = 'cover_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const { error: upErr } = await supabaseClient.storage.from('covers').upload(coverName, file, { contentType: file.type, upsert: false });
+                if (upErr) throw new Error('Kapak resmi storage yüklemesinde hata: ' + upErr.message);
+                const { data: covUrl } = supabaseClient.storage.from('covers').getPublicUrl(coverName);
+                thumbnailUrl = covUrl.publicUrl;
+            }
+            
+            const { error } = await supabaseClient.from('activities').insert({
+                title,
+                type,
+                description: desc,
+                content_url: contentUrl,
+                thumbnail: thumbnailUrl,
+                teacher_id: currentTeacher.id
+            });
+            
+            if (error) throw error;
+            
+        } catch (e) {
+            showToast('İçe aktarma hatası: ' + e.message, 'error');
+            return;
+        }
+    } else {
+        showToast('Demo modunda içe aktarılamaz.', 'error');
+        return;
+    }
+    
+    closeModal('importBucketFileModal');
+    await loadAllData();
+    if (currentLibraryTab === 'bucket') {
+        loadStorageBucketFiles();
+    } else {
+        renderLibraryLists();
+    }
+    showToast('Dosya başarıyla kütüphanenize eklendi!');
 }

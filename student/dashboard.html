@@ -73,11 +73,58 @@
         <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-same-origin"></iframe>
     </div>
 
+    <!-- Story Overlay (Flipbook Viewer) -->
+    <div class="game-overlay" id="storyOverlay" style="display:none; background: rgba(26, 21, 16, 0.96); align-items: center; justify-content: center; flex-direction: column;">
+        <div class="game-header" style="width: 100%;">
+            <span class="game-title" id="storyTitle">Hikaye Kitabı</span>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-sm" onclick="zoomStory(-0.1)" title="Uzaklaştır" style="box-shadow: none;">-</button>
+                <button class="btn btn-sm" onclick="zoomStory(0.1)" title="Yakınlaştır" style="box-shadow: none;">+</button>
+                <button class="game-close-btn" onclick="closeStory()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Kapat
+                </button>
+            </div>
+        </div>
+        
+        <div class="story-viewport" id="storyViewport">
+            <!-- Loading indicator -->
+            <div class="story-loading" id="storyLoading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: var(--cream); font-family: var(--font-mono); font-size: 14px;">Hikaye yükleniyor ve sayfalar hazırlanıyor...</p>
+            </div>
+            
+            <!-- Book Container -->
+            <div class="book" id="storyBook" style="display:none;">
+                <!-- Pages will be rendered here dynamically -->
+            </div>
+        </div>
+
+        <div class="story-controls">
+            <button class="btn btn-primary" id="storyPrevBtn" onclick="prevStoryPage()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                Geri
+            </button>
+            <span class="story-page-indicator" id="storyPageIndicator">Sayfa 0 / 0</span>
+            <button class="btn btn-primary" id="storyNextBtn" onclick="nextStoryPage()">
+                İleri
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+        </div>
+    </div>
+
     <!-- Audio -->
     <audio id="ambientSound" src="../sounds/ambiyanssesi.ogg" loop preload="auto"></audio>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        }
+    </script>
     <script src="../js/config.js"></script>
     <script src="student.js"></script>
 

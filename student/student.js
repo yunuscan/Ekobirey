@@ -158,7 +158,7 @@ function renderGameCard(act, index) {
     const hasContent = act.content_url && act.content_url.length > 0;
     const cleanUrl = getGameUrl(act.content_url);
     const onclick = hasContent
-        ? `openActivity('${act.id}', '${esc(act.title)}', '${esc(cleanUrl)}')`
+        ? `openActivity('${act.id}', '${esc(act.title)}', '${esc(cleanUrl)}', '${act.type}')`
         : `alert('${esc(act.title)}')`;
 
     // Kapak fotoğrafı varsa göster, yoksa ikon
@@ -214,9 +214,16 @@ async function loadBadges() {
 }
 
 // ====== Aktivite/Oyun Aç ======
-function openActivity(actId, title, contentUrl) {
+function openActivity(actId, title, contentUrl, type) {
     const cleanUrl = getGameUrl(contentUrl);
     if (!cleanUrl) {
+        return;
+    }
+
+    if (type === 'story' || cleanUrl.endsWith('.pdf') || cleanUrl.startsWith('data:application/pdf')) {
+        openStoryViewer(cleanUrl, title);
+        sessionStorage.setItem('game_start', Date.now());
+        sessionStorage.setItem('game_activity_id', actId);
         return;
     }
 
@@ -285,3 +292,189 @@ function esc(str) {
     if (!str) return '';
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
+
+// ============================================
+// Student 3D Flipbook Functions
+// ============================================
+let storyPdfDoc = null;
+let storyCurrentLeaf = 0;
+let storyScale = 1.0;
+let storyLeavesCount = 0;
+let storyTotalPages = 0;
+let storyLeaves = [];
+
+function playPageTurnSound() {
+    // Muted by user request
+    return;
+}
+
+async function renderPDFPage(pdfDoc, pageNum, canvas) {
+    try {
+        const page = await pdfDoc.getPage(pageNum);
+        const ctx = canvas.getContext('2d');
+        
+        const desiredHeight = 580 * 1.8;
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = desiredHeight / viewport.height;
+        const scaledViewport = page.getViewport({ scale: scale });
+        
+        canvas.height = scaledViewport.height;
+        canvas.width = scaledViewport.width;
+        
+        const renderContext = {
+            canvasContext: ctx,
+            viewport: scaledViewport
+        };
+        await page.render(renderContext).promise;
+    } catch (e) {
+        console.error('Render page error for page ' + pageNum, e);
+    }
+}
+
+async function openStoryViewer(pdfUrl, title) {
+    document.getElementById('storyTitle').textContent = title;
+    document.getElementById('storyLoading').style.display = 'block';
+    document.getElementById('storyBook').style.display = 'none';
+    document.getElementById('storyOverlay').style.display = 'flex';
+    
+    storyCurrentLeaf = 0;
+    storyScale = 1.0;
+    document.getElementById('storyBook').style.transform = 'scale(1.0)';
+    
+    try {
+        if (!window.pdfjsLib) {
+            throw new Error('PDF.js kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.');
+        }
+        
+        const loadingTask = window.pdfjsLib.getDocument(pdfUrl);
+        storyPdfDoc = await loadingTask.promise;
+        storyTotalPages = storyPdfDoc.numPages;
+        storyLeavesCount = Math.ceil(storyTotalPages / 2);
+        
+        const bookContainer = document.getElementById('storyBook');
+        bookContainer.innerHTML = '';
+        
+        const leafElements = [];
+        for (let i = 0; i < storyLeavesCount; i++) {
+            const leaf = document.createElement('div');
+            leaf.className = 'book-leaf';
+            
+            const frontPageNum = i * 2 + 1;
+            const frontDiv = document.createElement('div');
+            frontDiv.className = 'book-page front';
+            const frontCanvas = document.createElement('canvas');
+            frontDiv.appendChild(frontCanvas);
+            leaf.appendChild(frontDiv);
+            
+            const backPageNum = i * 2 + 2;
+            const backDiv = document.createElement('div');
+            backDiv.className = 'book-page back';
+            if (backPageNum <= storyTotalPages) {
+                const backCanvas = document.createElement('canvas');
+                backDiv.appendChild(backCanvas);
+                leaf.appendChild(backDiv);
+            } else {
+                backDiv.innerHTML = '<div style="color:var(--text-light); font-family:var(--font-mono); font-size:14px; font-weight:700;">Son</div>';
+                leaf.appendChild(backDiv);
+            }
+            
+            bookContainer.appendChild(leaf);
+            leafElements.push(leaf);
+            
+            renderPDFPage(storyPdfDoc, frontPageNum, frontCanvas);
+            if (backPageNum <= storyTotalPages) {
+                const backCanvas = leaf.querySelector('.book-page.back canvas');
+                if (backCanvas) renderPDFPage(storyPdfDoc, backPageNum, backCanvas);
+            }
+        }
+        
+        storyLeaves = leafElements;
+        updateStoryNavigation();
+        
+        document.getElementById('storyLoading').style.display = 'none';
+        document.getElementById('storyBook').style.display = 'block';
+    } catch (err) {
+        console.error('PDF Load Error:', err);
+        closeStory();
+    }
+}
+
+function updateStoryNavigation() {
+    for (let i = 0; i < storyLeaves.length; i++) {
+        const leaf = storyLeaves[i];
+        if (i < storyCurrentLeaf) {
+            leaf.classList.add('flipped');
+            leaf.style.zIndex = 10 + i;
+        } else {
+            leaf.classList.remove('flipped');
+            leaf.style.zIndex = 100 - i;
+        }
+    }
+    
+    let pageText = '';
+    if (storyCurrentLeaf === 0) {
+        pageText = `Kapak (Sayfa 1 / ${storyTotalPages})`;
+    } else {
+        const startPage = storyCurrentLeaf * 2;
+        const endPage = Math.min(storyCurrentLeaf * 2 + 1, storyTotalPages);
+        pageText = `Sayfa ${startPage} - ${endPage} / ${storyTotalPages}`;
+    }
+    document.getElementById('storyPageIndicator').textContent = pageText;
+    
+    document.getElementById('storyPrevBtn').disabled = (storyCurrentLeaf === 0);
+    document.getElementById('storyNextBtn').disabled = (storyCurrentLeaf >= storyLeavesCount);
+}
+
+function nextStoryPage() {
+    if (storyCurrentLeaf < storyLeavesCount) {
+        storyCurrentLeaf++;
+        updateStoryNavigation();
+        playPageTurnSound();
+    }
+}
+
+function prevStoryPage() {
+    if (storyCurrentLeaf > 0) {
+        storyCurrentLeaf--;
+        updateStoryNavigation();
+        playPageTurnSound();
+    }
+}
+
+function zoomStory(amount) {
+    storyScale = Math.max(0.4, Math.min(2.0, storyScale + amount));
+    const book = document.getElementById('storyBook');
+    if (book) book.style.transform = `scale(${storyScale})`;
+}
+
+function closeStory() {
+    const startTime = parseInt(sessionStorage.getItem('game_start') || '0');
+    const actId = sessionStorage.getItem('game_activity_id');
+    if (startTime && actId && isSupabaseConnected() && studentData) {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        supabaseClient.from('activity_completions').insert({
+            activity_id: actId,
+            student_id: studentData.id,
+            duration_seconds: duration
+        }).then(() => {}).catch(() => {});
+    }
+
+    document.getElementById('storyOverlay').style.display = 'none';
+    storyPdfDoc = null;
+    storyLeaves = [];
+    sessionStorage.removeItem('game_start');
+    sessionStorage.removeItem('game_activity_id');
+}
+
+document.addEventListener('keydown', (e) => {
+    const overlay = document.getElementById('storyOverlay');
+    if (overlay && overlay.style.display === 'flex') {
+        if (e.key === 'ArrowRight') {
+            nextStoryPage();
+        } else if (e.key === 'ArrowLeft') {
+            prevStoryPage();
+        } else if (e.key === 'Escape') {
+            closeStory();
+        }
+    }
+});
