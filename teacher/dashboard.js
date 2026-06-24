@@ -609,7 +609,7 @@ async function addActivity() {
         // 1. Upload cover photo if provided
         if (coverInput?.files?.[0] && isSupabaseConnected()) {
             const file = coverInput.files[0];
-            const coverName = 'cover_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+            const coverName = currentTeacher.id + '/cover_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
             const { error: upErr } = await supabaseClient.storage.from('covers').upload(coverName, file, { contentType: file.type, upsert: false });
             if (upErr) throw new Error('Aktivite kapak resmi storage yüklemesinde RLS/Yetki hatası: ' + upErr.message);
             const { data: urlD } = supabaseClient.storage.from('covers').getPublicUrl(coverName);
@@ -620,7 +620,7 @@ async function addActivity() {
         if (type === 'story' && pdfInput?.files?.[0]) {
             const file = pdfInput.files[0];
             if (isSupabaseConnected()) {
-                const fileName = 'story_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const fileName = currentTeacher.id + '/story_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                 const { error: upErr } = await supabaseClient.storage.from('stories').upload(fileName, file, { contentType: 'application/pdf', upsert: false });
                 if (upErr) throw new Error('PDF storage yüklemesinde hata: ' + upErr.message);
                 const { data: urlD } = supabaseClient.storage.from('stories').getPublicUrl(fileName);
@@ -827,7 +827,7 @@ async function uploadGame() {
             // 1. Upload cover photo if provided
             if (coverInput?.files?.[0]) {
                 const coverFile = coverInput.files[0];
-                const coverName = 'cover_' + Date.now() + '_' + coverFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const coverName = currentTeacher.id + '/cover_' + Date.now() + '_' + coverFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
                 const { error: covErr } = await supabaseClient.storage.from('covers').upload(coverName, coverFile, { contentType: coverFile.type, upsert: false });
                 if (covErr) throw new Error('Kapak fotoğrafı storage yüklemesinde RLS/Yetki hatası: ' + covErr.message);
                 const { data: covUrl } = supabaseClient.storage.from('covers').getPublicUrl(coverName);
@@ -835,11 +835,12 @@ async function uploadGame() {
             }
 
             // 2. Upload HTML file to Supabase Storage "games" bucket
+            const filePath = currentTeacher.id + '/' + fileName;
             const blob = new Blob([uploadedGameContent], { type: 'text/html' });
             const { data: uploadData, error: uploadError } = await supabaseClient
                 .storage
                 .from('games')
-                .upload(fileName, blob, {
+                .upload(filePath, blob, {
                     contentType: 'text/html',
                     upsert: false
                 });
@@ -850,7 +851,7 @@ async function uploadGame() {
             const { data: urlData } = supabaseClient
                 .storage
                 .from('games')
-                .getPublicUrl(fileName);
+                .getPublicUrl(filePath);
 
             const contentUrl = urlData.publicUrl;
 
@@ -1712,65 +1713,153 @@ async function loadStorageBucketFiles() {
     }
     
     try {
-        const { data: bucketGames, error: errGames } = await supabaseClient.storage.from('games').list('', { limit: 100 });
-        const { data: bucketStories, error: errStories } = await supabaseClient.storage.from('stories').list('', { limit: 100 });
-        
-        if (errGames) throw new Error('Oyun bucket listeleme hatası: ' + errGames.message);
-        if (errStories) throw new Error('Hikaye bucket listeleme hatası: ' + errStories.message);
-        
+        // Fetch games (root and private)
+        let rootGames = [];
+        let privateGames = [];
+        try {
+            const { data, error } = await supabaseClient.storage.from('games').list('', { limit: 100 });
+            if (error) console.error('Games root list error:', error);
+            else rootGames = data || [];
+        } catch (e) {
+            console.error('Games root list exception:', e);
+        }
+
+        if (currentTeacher?.id) {
+            try {
+                const { data, error } = await supabaseClient.storage.from('games').list(currentTeacher.id, { limit: 100 });
+                if (error) console.error('Games private list error:', error);
+                else privateGames = data || [];
+            } catch (e) {
+                console.error('Games private list exception:', e);
+            }
+        }
+
+        // Fetch stories (root and private)
+        let rootStories = [];
+        let privateStories = [];
+        try {
+            const { data, error } = await supabaseClient.storage.from('stories').list('', { limit: 100 });
+            if (error) console.error('Stories root list error:', error);
+            else rootStories = data || [];
+        } catch (e) {
+            console.error('Stories root list exception:', e);
+        }
+
+        if (currentTeacher?.id) {
+            try {
+                const { data, error } = await supabaseClient.storage.from('stories').list(currentTeacher.id, { limit: 100 });
+                if (error) console.error('Stories private list error:', error);
+                else privateStories = data || [];
+            } catch (e) {
+                console.error('Stories private list exception:', e);
+            }
+        }
+
+        // Process and merge games
+        const processedGames = [];
+        rootGames.forEach(f => {
+            if (f.name !== '.emptyFolderPlaceholder' && f.metadata) {
+                processedGames.push({
+                    name: f.name,
+                    fullPath: f.name,
+                    size: f.metadata?.size || 0,
+                    origin: 'Genel'
+                });
+            }
+        });
+        privateGames.forEach(f => {
+            if (f.name !== '.emptyFolderPlaceholder' && f.metadata) {
+                processedGames.push({
+                    name: f.name,
+                    fullPath: `${currentTeacher.id}/${f.name}`,
+                    size: f.metadata?.size || 0,
+                    origin: 'Özel'
+                });
+            }
+        });
+
+        // Process and merge stories
+        const processedStories = [];
+        rootStories.forEach(f => {
+            if (f.name !== '.emptyFolderPlaceholder' && f.metadata) {
+                processedStories.push({
+                    name: f.name,
+                    fullPath: f.name,
+                    size: f.metadata?.size || 0,
+                    origin: 'Genel'
+                });
+            }
+        });
+        privateStories.forEach(f => {
+            if (f.name !== '.emptyFolderPlaceholder' && f.metadata) {
+                processedStories.push({
+                    name: f.name,
+                    fullPath: `${currentTeacher.id}/${f.name}`,
+                    size: f.metadata?.size || 0,
+                    origin: 'Özel'
+                });
+            }
+        });
+
         const importedGameUrls = activitiesData.filter(a => a.type === 'game').map(a => a.content_url || '');
-        const gamesHtml = (bucketGames || [])
-            .filter(f => f.name !== '.emptyFolderPlaceholder')
-            .map(f => {
-                const isImported = importedGameUrls.some(url => url.endsWith(f.name));
-                const actionBtn = isImported
-                    ? '<span style="font-size: 12px; color: var(--green-dark); font-weight: 700;">✓ Kütüphanede</span>'
-                    : `<button class="btn btn-sm btn-primary" onclick="openImportBucketFileModal('${esc(f.name)}', 'game')">İçe Aktar</button>`;
-                
-                return `
-                    <div class="library-card">
-                        <div class="library-card-cover">
-                            <div class="library-card-icon">🎮</div>
-                        </div>
-                        <div class="library-card-body">
-                            <div class="library-card-title" title="${esc(f.name)}">${esc(f.name)}</div>
-                            <div class="library-card-desc">Boyut: ${(f.metadata?.size / 1024 || 0).toFixed(1)} KB</div>
-                            <div class="library-card-footer">
-                                ${actionBtn}
-                            </div>
+        const gamesHtml = processedGames.map(f => {
+            const isImported = importedGameUrls.some(url => url.endsWith(f.fullPath));
+            const actionBtn = isImported
+                ? '<span style="font-size: 12px; color: var(--green-dark); font-weight: 700;">✓ Kütüphanede</span>'
+                : `<button class="btn btn-sm btn-primary" onclick="openImportBucketFileModal('${esc(f.fullPath)}', 'game')">İçe Aktar</button>`;
+            
+            const originBadge = f.origin === 'Genel' 
+                ? `<span style="background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px;">Genel</span>`
+                : `<span style="background: #f3e8ff; color: #6b21a8; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px;">Özel</span>`;
+
+            return `
+                <div class="library-card">
+                    <div class="library-card-cover">
+                        <div class="library-card-icon">🎮</div>
+                    </div>
+                    <div class="library-card-body">
+                        ${originBadge}
+                        <div class="library-card-title" title="${esc(f.name)}">${esc(f.name)}</div>
+                        <div class="library-card-desc">Boyut: ${(f.size / 1024 || 0).toFixed(1)} KB</div>
+                        <div class="library-card-footer">
+                            ${actionBtn}
                         </div>
                     </div>
-                `;
-            }).join('');
+                </div>
+            `;
+        }).join('');
             
-        gamesList.innerHTML = gamesHtml || '<div class="empty-state"><p>Games bucketında dosya bulunamadı.</p></div>';
+        gamesList.innerHTML = gamesHtml || '<div class="empty-state"><p>Dosya bulunamadı.</p></div>';
         
         const importedStoryUrls = activitiesData.filter(a => a.type === 'story').map(a => a.content_url || '');
-        const storiesHtml = (bucketStories || [])
-            .filter(f => f.name !== '.emptyFolderPlaceholder')
-            .map(f => {
-                const isImported = importedStoryUrls.some(url => url.endsWith(f.name));
-                const actionBtn = isImported
-                    ? '<span style="font-size: 12px; color: var(--green-dark); font-weight: 700;">✓ Kütüphanede</span>'
-                    : `<button class="btn btn-sm btn-primary" onclick="openImportBucketFileModal('${esc(f.name)}', 'story')">İçe Aktar</button>`;
-                
-                return `
-                    <div class="library-card">
-                        <div class="library-card-cover">
-                            <div class="library-card-icon">📖</div>
-                        </div>
-                        <div class="library-card-body">
-                            <div class="library-card-title" title="${esc(f.name)}">${esc(f.name)}</div>
-                            <div class="library-card-desc">Boyut: ${(f.metadata?.size / 1024 / 1024 || 0).toFixed(2)} MB</div>
-                            <div class="library-card-footer">
-                                ${actionBtn}
-                            </div>
+        const storiesHtml = processedStories.map(f => {
+            const isImported = importedStoryUrls.some(url => url.endsWith(f.fullPath));
+            const actionBtn = isImported
+                ? '<span style="font-size: 12px; color: var(--green-dark); font-weight: 700;">✓ Kütüphanede</span>'
+                : `<button class="btn btn-sm btn-primary" onclick="openImportBucketFileModal('${esc(f.fullPath)}', 'story')">İçe Aktar</button>`;
+            
+            const originBadge = f.origin === 'Genel' 
+                ? `<span style="background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px;">Genel</span>`
+                : `<span style="background: #f3e8ff; color: #6b21a8; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px;">Özel</span>`;
+
+            return `
+                <div class="library-card">
+                    <div class="library-card-cover">
+                        <div class="library-card-icon">📖</div>
+                    </div>
+                    <div class="library-card-body">
+                        ${originBadge}
+                        <div class="library-card-title" title="${esc(f.name)}">${esc(f.name)}</div>
+                        <div class="library-card-desc">Boyut: ${(f.size / 1024 / 1024 || 0).toFixed(2)} MB</div>
+                        <div class="library-card-footer">
+                            ${actionBtn}
                         </div>
                     </div>
-                `;
-            }).join('');
+                </div>
+            `;
+        }).join('');
             
-        storiesList.innerHTML = storiesHtml || '<div class="empty-state"><p>Stories bucketında dosya bulunamadı.</p></div>';
+        storiesList.innerHTML = storiesHtml || '<div class="empty-state"><p>Dosya bulunamadı.</p></div>';
         
     } catch (e) {
         gamesList.innerHTML = `<div class="empty-state"><p>Hata: ${esc(e.message)}</p></div>`;
@@ -1781,9 +1870,11 @@ async function loadStorageBucketFiles() {
 function openImportBucketFileModal(fileName, type) {
     document.getElementById('importBucketFileName').value = fileName;
     document.getElementById('importBucketType').value = type;
-    document.getElementById('importBucketFileLabel').value = fileName;
     
-    document.getElementById('importActivityTitle').value = fileName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+    const baseName = fileName.substring(fileName.lastIndexOf('/') + 1);
+    document.getElementById('importBucketFileLabel').value = baseName;
+    
+    document.getElementById('importActivityTitle').value = baseName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
     document.getElementById('importActivityDesc').value = '';
     const coverInput = document.getElementById('importActivityCover');
     if (coverInput) coverInput.value = '';
@@ -1813,7 +1904,7 @@ async function importBucketFileSubmit() {
             
             if (coverInput?.files?.[0]) {
                 const file = coverInput.files[0];
-                const coverName = 'cover_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const coverName = currentTeacher.id + '/cover_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                 const { error: upErr } = await supabaseClient.storage.from('covers').upload(coverName, file, { contentType: file.type, upsert: false });
                 if (upErr) throw new Error('Kapak resmi storage yüklemesinde hata: ' + upErr.message);
                 const { data: covUrl } = supabaseClient.storage.from('covers').getPublicUrl(coverName);
