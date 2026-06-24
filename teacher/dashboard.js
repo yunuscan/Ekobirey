@@ -542,7 +542,8 @@ function renderActivities() {
     const typeBadge = { game: 'badge-game', story: 'badge-story', task: 'badge-task', homework: 'badge-task' };
 
     tbody.innerHTML = activitiesData.map(a => {
-        const thumbHtml = a.thumbnail ? `<img src="${esc(a.thumbnail)}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;margin-right:8px;vertical-align:middle;">` : '';
+        const thumbUrl = a.thumbnail || '../img/ekobirey-logo.webp';
+        const thumbHtml = `<img src="${esc(thumbUrl)}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;margin-right:8px;vertical-align:middle;">`;
         const playBtn = (a.type === 'game' && a.content_url) 
             ? `<button class="btn btn-sm btn-primary" onclick="openGame('${esc(a.title)}', '${esc(a.content_url)}')">Oyna</button>` 
             : '';
@@ -579,18 +580,19 @@ async function addActivity() {
 
     // Helper for final activity insertion
     const saveActivityRecord = async (finalContentUrl, finalThumbUrl) => {
+        const thumb = finalThumbUrl || '../img/ekobirey-logo.webp';
         if (isSupabaseConnected()) {
             try {
                 const { error } = await supabaseClient.from('activities').insert({
                     title, type, description: desc,
                     content_url: finalContentUrl || null,
-                    thumbnail: finalThumbUrl,
+                    thumbnail: thumb,
                     teacher_id: currentTeacher.id
                 });
                 if (error) throw new Error('Aktivite tablosu RLS hatası: ' + error.message);
             } catch (e) { showToast('Hata: ' + e.message, 'error'); return; }
         } else {
-            activitiesData.push({ id: 'a' + Date.now(), title, type, description: desc, content_url: finalContentUrl, thumbnail: finalThumbUrl, created_at: new Date().toISOString() });
+            activitiesData.push({ id: 'a' + Date.now(), title, type, description: desc, content_url: finalContentUrl, thumbnail: thumb, created_at: new Date().toISOString() });
         }
         
         // Clean up & refresh
@@ -856,10 +858,11 @@ async function uploadGame() {
             const contentUrl = urlData.publicUrl;
 
             // 4. Save activity with public URL
+            const thumb = thumbnailUrl || '../img/ekobirey-logo.webp';
             const { error } = await supabaseClient.from('activities').insert({
                 title, type: 'game', description: desc,
                 content_url: contentUrl,
-                thumbnail: thumbnailUrl,
+                thumbnail: thumb,
                 teacher_id: currentTeacher.id
             });
             if (error) throw new Error('Aktivite tablosu RLS hatası: ' + error.message);
@@ -868,9 +871,10 @@ async function uploadGame() {
         // Demo mode: store as data URI
         const base64Content = btoa(unescape(encodeURIComponent(uploadedGameContent)));
         const contentUrl = 'data:text/html;base64,' + base64Content;
+        const thumb = thumbnailUrl || '../img/ekobirey-logo.webp';
         activitiesData.push({
             id: 'a' + Date.now(), title, type: 'game', description: desc,
-            content_url: contentUrl, thumbnail: thumbnailUrl, created_at: new Date().toISOString()
+            content_url: contentUrl, thumbnail: thumb, created_at: new Date().toISOString()
         });
     }
 
@@ -1367,7 +1371,8 @@ function renderLibraryLists() {
             storiesList.innerHTML = '<div class="empty-state"><p>Henüz hikaye eklenmemiş</p></div>';
         } else {
             storiesList.innerHTML = teacherStories.map(s => {
-                const thumb = s.thumbnail ? `<img src="${esc(s.thumbnail)}">` : `<div class="library-card-icon">📖</div>`;
+                const thumbUrl = s.thumbnail || '../img/ekobirey-logo.webp';
+                const thumb = `<img src="${esc(thumbUrl)}">`;
                 const pdfUrl = getStoryUrl(s.content_url);
                 return `
                     <div class="library-card">
@@ -1389,7 +1394,8 @@ function renderLibraryLists() {
             gamesList.innerHTML = '<div class="empty-state"><p>Henüz oyun eklenmemiş</p></div>';
         } else {
             gamesList.innerHTML = teacherGames.map(g => {
-                const thumb = g.thumbnail ? `<img src="${esc(g.thumbnail)}">` : `<div class="library-card-icon">🎮</div>`;
+                const thumbUrl = g.thumbnail || '../img/ekobirey-logo.webp';
+                const thumb = `<img src="${esc(thumbUrl)}">`;
                 return `
                     <div class="library-card">
                         <div class="library-card-cover">${thumb}</div>
@@ -1911,12 +1917,13 @@ async function importBucketFileSubmit() {
                 thumbnailUrl = covUrl.publicUrl;
             }
             
+            const thumb = thumbnailUrl || '../img/ekobirey-logo.webp';
             const { error } = await supabaseClient.from('activities').insert({
                 title,
                 type,
                 description: desc,
                 content_url: contentUrl,
-                thumbnail: thumbnailUrl,
+                thumbnail: thumb,
                 teacher_id: currentTeacher.id
             });
             

@@ -161,23 +161,15 @@ function renderGameCard(act, index) {
         ? `openActivity('${act.id}', '${esc(act.title)}', '${esc(cleanUrl)}', '${act.type}')`
         : `alert('${esc(act.title)}')`;
 
-    // Kapak fotoğrafı varsa göster, yoksa ikon
-    if (act.thumbnail) {
-        return `
-        <div class="game-card game-card-with-cover ${colorClass}" onclick="${onclick}">
-            <div class="game-card-cover">
-                <img src="${esc(act.thumbnail)}" alt="${esc(act.title)}">
-            </div>
-            <div class="game-card-title">${esc(act.title)}</div>
-        </div>`;
-    }
-
-    const icon = TYPE_ICONS[act.type] || TYPE_ICONS.game;
+    // Kapak fotoğrafı varsa göster, yoksa varsayılan logo
+    const thumbUrl = act.thumbnail || '../img/ekobirey-logo.webp';
     return `
-        <div class="game-card ${colorClass}" onclick="${onclick}">
-            <div class="game-card-icon">${icon}</div>
-            <div class="game-card-title">${esc(act.title)}</div>
-        </div>`;
+    <div class="game-card game-card-with-cover ${colorClass}" onclick="${onclick}">
+        <div class="game-card-cover">
+            <img src="${esc(thumbUrl)}" alt="${esc(act.title)}">
+        </div>
+        <div class="game-card-title">${esc(act.title)}</div>
+    </div>`;
 }
 
 

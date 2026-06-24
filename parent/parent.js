@@ -495,10 +495,8 @@ function getGameUrl(url) {
 }
 
 function renderGameCard(game) {
-    const controllerSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"></rect><path d="M12 12h.01"></path><path d="M15 12h.01"></path><path d="M18 12h.01"></path><path d="M8 12H6"></path><path d="M7 11v2"></path></svg>';
-    const thumbHtml = game.thumbnail
-        ? `<div class="game-card-thumb"><img src="${esc(game.thumbnail)}" alt="${esc(game.title)}"></div>`
-        : `<div class="game-card-thumb">${controllerSvg}</div>`;
+    const thumbUrl = game.thumbnail || '../img/ekobirey-logo.webp';
+    const thumbHtml = `<div class="game-card-thumb"><img src="${esc(thumbUrl)}" alt="${esc(game.title)}"></div>`;
 
     const hasContent = game.content_url && game.content_url.length > 0;
     const cleanUrl = getGameUrl(game.content_url);
